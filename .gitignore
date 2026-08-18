@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django
+*.log
+local_settings.py
+staticfiles/
+media/
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+postgres_data/
+redis_data/
+backend/django_admin/.test.sqlite3
+
+# Flutter / mobile
+mobile/pos_app/.dart_tool/
+mobile/pos_app/build/
+mobile/pos_app/.flutter-plugins
+mobile/pos_app/.flutter-plugins-dependencies
+mobile/pos_app/.packages
+mobile/pos_app/pubspec.lock
+
+# OS
+.DS_Store
+Thumbs.db

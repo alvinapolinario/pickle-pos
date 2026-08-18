@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pickle_pos}
+      POSTGRES_USER: ${POSTGRES_USER:-pickle_pos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pickle_pos_dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pickle_pos} -d ${POSTGRES_DB:-pickle_pos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  django:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+      sh -c "python django_admin/manage.py migrate --noinput &&
+             python django_admin/manage.py runserver 0.0.0.0:8000"
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    volumes:
+      - ./backend:/app/backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: uvicorn fastapi_api.main:app --host 0.0.0.0 --port 8001 --reload
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app/backend
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      django:
+        condition: service_started
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: celery -A workers.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: celery -A workers.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - django
+      - fastapi
+
+volumes:
+  postgres_data:
