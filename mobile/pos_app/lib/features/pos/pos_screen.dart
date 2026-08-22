@@ -8,6 +8,7 @@ import '../../core/auth/session.dart';
 import '../../core/network/api_client.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
+import '../customers/customer_picker.dart';
 import 'cart_controller.dart';
 
 class PosScreen extends ConsumerStatefulWidget {
@@ -124,6 +125,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               actionLabel: 'Open',
               onAction: () => context.go('/shift'),
             ),
+          const CustomerBar(),
           if (_showSearch)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -195,6 +197,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           if (cart.isNotEmpty)
             SafeArea(
               top: false,
+              bottom: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Material(
@@ -262,6 +265,7 @@ class _ProductCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
+            flex: 3,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -294,14 +298,22 @@ class _ProductCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            product['name'] as String,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w800, height: 1.2, color: ink),
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product['name'] as String,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, height: 1.2, color: ink),
+                ),
+                const Spacer(),
+                MoneyText(product['selling_price'], size: 15, color: accent),
+              ],
+            ),
           ),
-          const SizedBox(height: 4),
-          MoneyText(product['selling_price'], size: 15, color: accent),
         ],
       ),
     );

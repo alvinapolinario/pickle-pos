@@ -11,6 +11,7 @@ import '../features/pos/barcode_scan_screen.dart';
 import '../features/pos/cart_screen.dart';
 import '../features/pos/pos_screen.dart';
 import '../features/receipt/receipt_screen.dart';
+import '../features/settings/printers_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/shift/shift_screen.dart';
 import '../features/shell/shell_screen.dart';
@@ -41,6 +42,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         ],
       ),
+      GoRoute(path: '/printers', builder: (_, __) => const PrintersScreen()),
       GoRoute(path: '/scan', builder: (_, __) => const BarcodeScanScreen()),
       GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
       GoRoute(path: '/pay', builder: (_, __) => const PaymentScreen()),

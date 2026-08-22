@@ -2,7 +2,7 @@
 
 > Last updated: **2026-08-22**  
 > Current phase: **Phase 7 — Hardening (Complete)**  
-> Next: Bluetooth print, load tests, Flutter member picker
+> Next: load tests, verify Bluetooth on a physical printer
 
 This document tracks all architectural decisions, implemented work, test status, and remaining tasks across the full project roadmap.
 
@@ -15,8 +15,8 @@ This document tracks all architectural decisions, implemented work, test status,
 | Architecture design | Complete |
 | Phase 1 — Foundation | **Complete** |
 | Phase 2 — Product & Inventory | **Complete** (optional variants/modifiers skipped) |
-| Phase 3 — POS Core | **Complete** (Bluetooth thermal print left for device hardware) |
-| Phase 4 — Android POS | **Complete** (Bluetooth thermal print left for device hardware) |
+| Phase 3 — POS Core | **Complete** |
+| Phase 4 — Android POS | **Complete** |
 | Phase 5 — Court Management | **Complete** |
 | Phase 6 — Reporting | **Complete** |
 | Phase 7 — Hardening | **Complete** (load tests still later) |
@@ -299,7 +299,7 @@ These decisions were made during the initial design session and should not chang
 
 ## Phase 4 — Android POS (Flutter)
 
-**Status: Complete** (Bluetooth thermal print left for device hardware)
+**Status: Complete**
 
 ### 4.1 Flutter Project Setup
 
@@ -337,7 +337,7 @@ These decisions were made during the initial design session and should not chang
 
 ### 4.4 Printing
 
-- [ ] Thermal printer abstraction (Bluetooth) — copy-to-printer-app until hardware is available
+- [x] Thermal printer abstraction (Bluetooth ESC/POS via `print_bluetooth_thermal`)
 - [x] Receipt print from local data
 - [x] Reprint from synced transaction
 
@@ -380,6 +380,7 @@ These decisions were made during the initial design session and should not chang
 - [x] Feature flag `branch.memberships_enabled`
 - [x] Apply membership pricing in court and canteen services
 - [x] Loyalty ledger on paid sales/bookings; reverse on void/refund
+- [x] Flutter customer picker on POS and Bookings (`customer_id` on quote/create)
 
 ---
 
@@ -437,6 +438,7 @@ These decisions were made during the initial design session and should not chang
 - [x] HTTPS-ready production config (HSTS + SSL redirect via env)
 - [x] Production refuses default `change-me` secrets
 - [x] Auth and money endpoints return 403 for missing permissions
+- [x] POS pairing API key + QR (`PosConnection`, `X-Api-Key`, Flutter scan)
 
 ### 7.2 Audit
 
@@ -550,10 +552,9 @@ backend\.venv\Scripts\pytest -v
 | Dedicated load tests | Medium | Next |
 | Dashboard shows placeholder data only | Low | Phase 6 leftover |
 | Redis optional in tests (by design) | Info | — |
-| Bluetooth thermal printer not wired | Medium | Phase 4 leftover |
+| Bluetooth thermal print needs a physical Android printer to verify | Info | Phase 4 leftover |
 | Drift SQLite catalog cache not yet used (JSON queue) | Medium | Phase 4 leftover |
 | Booking overlap uses service lock, not Postgres EXCLUDE | Medium | Phase 5 leftover |
-| Flutter POS customer picker for member rates | Medium | Next |
 
 ---
 
@@ -562,7 +563,7 @@ backend\.venv\Scripts\pytest -v
 1. **Create initial git commit** and push so GitHub Actions can run
 2. **Use `docker-compose.prod.yml` with real secrets** when deploying
 3. **Tag `v1.0.0`** when you want CD to publish `ghcr.io/<owner>/pickle-pos`
-4. **Bluetooth printing** when a physical printer is available
+4. **Verify Bluetooth printing** on a physical 58mm/80mm ESC/POS printer
 
 ---
 
@@ -585,3 +586,6 @@ backend\.venv\Scripts\pytest -v
 | 2026-08-22 | CI/CD: GitHub Actions pytest + Docker + Flutter; GHCR publish on version tags |
 | 2026-08-22 | Memberships: tiers, assignments, court/canteen discounts, loyalty points |
 | 2026-08-22 | PDF export on sales, court, inventory, and financial reports |
+| 2026-08-22 | Flutter Bluetooth thermal print: pair, reconnect, test print, receipt Print |
+| 2026-08-22 | Flutter customer picker on POS and Bookings; FastAPI GET/POST /customers |
+| 2026-08-22 | POS pairing QR: API URL + key in System Settings; Flutter scan / X-Api-Key |

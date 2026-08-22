@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/auth/session.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/pairing.dart';
 import '../../ui/widgets.dart';
+import 'pairing_scan_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -37,11 +39,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-        child: _LoginApiSettings(onSaved: () {
-          if (mounted) setState(() {});
-        }),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: _LoginApiSettings(onSaved: () {
+            if (mounted) setState(() {});
+          }),
+        ),
       ),
     );
   }
@@ -77,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(sessionProvider.notifier).setShift(shift?['id'] as int?);
       if (mounted) context.go(shift == null ? '/shift' : '/home');
     } catch (error) {
-      setState(() => _error = 'Could not sign in. Check user, password, and API URL.');
+      setState(() => _error = 'Could not sign in. Check user, password, API URL, and API key.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -115,7 +119,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       constraints: const BoxConstraints(maxWidth: 420),
                       child: Column(
                         children: [
-                          const BrandMark(size: 56),
+                          const BrandMark(size: 96),
                           const SizedBox(height: 16),
                           const Text(
                             'PICKLEBALL POS',
@@ -212,24 +216,40 @@ class _LoginApiSettings extends ConsumerStatefulWidget {
 
 class _LoginApiSettingsState extends ConsumerState<_LoginApiSettings> {
   late final TextEditingController _url;
+  late final TextEditingController _key;
   bool _saved = false;
 
   @override
   void initState() {
     super.initState();
-    _url = TextEditingController(text: ref.read(sessionProvider).baseUrl);
+    final session = ref.read(sessionProvider);
+    _url = TextEditingController(text: session.baseUrl);
+    _key = TextEditingController(text: session.apiKey);
   }
 
   @override
   void dispose() {
     _url.dispose();
+    _key.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final url = _url.text.trim();
     if (url.isEmpty) return;
-    await ref.read(sessionProvider.notifier).updateBaseUrl(url);
+    await ref.read(sessionProvider.notifier).updateConnection(url: url, apiKey: _key.text.trim());
+    setState(() => _saved = true);
+    widget.onSaved();
+  }
+
+  Future<void> _scan() async {
+    final pairing = await Navigator.of(context).push<PosPairing>(
+      MaterialPageRoute(builder: (_) => const PairingScanScreen()),
+    );
+    if (pairing == null || !mounted) return;
+    _url.text = pairing.url;
+    _key.text = pairing.key;
+    await ref.read(sessionProvider.notifier).updateConnection(url: pairing.url, apiKey: pairing.key);
     setState(() => _saved = true);
     widget.onSaved();
   }
@@ -241,12 +261,16 @@ class _LoginApiSettingsState extends ConsumerState<_LoginApiSettings> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.82;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           Center(
             child: Container(
               width: 40,
@@ -258,18 +282,34 @@ class _LoginApiSettingsState extends ConsumerState<_LoginApiSettings> {
           const Text('API settings', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: ink)),
           const SizedBox(height: 4),
           const Text(
-            'Point this tablet at the FastAPI server. Use your computer LAN IP on a physical device.',
+            'Scan the QR from System Settings, or type the API URL and key.',
             style: TextStyle(color: muted, height: 1.35),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _scan,
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Scan pairing QR'),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _url,
             keyboardType: TextInputType.url,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _save(),
+            textInputAction: TextInputAction.next,
             decoration: const InputDecoration(
               labelText: 'API URL',
               prefixIcon: Icon(Icons.link),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _key,
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+            decoration: const InputDecoration(
+              labelText: 'API key',
+              prefixIcon: Icon(Icons.key_outlined),
             ),
           ),
           const SizedBox(height: 12),
@@ -295,7 +335,7 @@ class _LoginApiSettingsState extends ConsumerState<_LoginApiSettings> {
           if (_saved) ...[
             const SizedBox(height: 12),
             const SoftBanner(
-              message: 'API URL saved.',
+              message: 'API URL and key saved.',
               tone: StatusTone.good,
               margin: EdgeInsets.zero,
             ),
@@ -306,6 +346,8 @@ class _LoginApiSettingsState extends ConsumerState<_LoginApiSettings> {
             child: const Text('Save'),
           ),
         ],
+          ),
+        ),
       ),
     );
   }

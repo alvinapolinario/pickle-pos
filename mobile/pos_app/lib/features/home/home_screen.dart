@@ -54,7 +54,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final sales = await api.sales(status: 'completed');
       final today = sales.where((row) => _isToday((row as Map)['created_at'])).map((row) => Map<String, dynamic>.from(row as Map)).toList();
       final total = today.fold<double>(0, (sum, sale) => sum + asMoney(sale['net_amount']));
-      final customers = today.map((sale) => sale['customer_id'] ?? sale['id']).toSet().length;
+      final customers = today.map((sale) => sale['customer_id']).where((id) => id != null).toSet().length;
       List<Map<String, dynamic>> low = const [];
       try {
         final balances = await api.balances();
@@ -94,7 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Row(
                 children: [
-                  const BrandMark(size: 40),
+                  const BrandMark(size: 48),
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
@@ -288,22 +288,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _metric(String label, String value, IconData icon) {
     return PosCard(
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: accentSoft,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: accent, size: 26),
+            child: Icon(icon, color: accent, size: 22),
           ),
           const Spacer(),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: ink)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: ink)),
+          ),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(color: muted, fontWeight: FontWeight.w600, fontSize: 12)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: muted, fontWeight: FontWeight.w600, fontSize: 12),
+          ),
         ],
       ),
     );

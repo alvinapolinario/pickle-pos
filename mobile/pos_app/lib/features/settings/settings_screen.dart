@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../core/auth/session.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/pairing.dart';
+import '../../core/printing/printer_service.dart';
 import '../../ui/widgets.dart';
+import '../login/pairing_scan_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -16,6 +19,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late final TextEditingController _url;
+  late final TextEditingController _key;
   late final TextEditingController _device;
   String? _message;
   StatusTone _tone = StatusTone.info;
@@ -28,6 +32,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.initState();
     final session = ref.read(sessionProvider);
     _url = TextEditingController(text: session.baseUrl);
+    _key = TextEditingController(text: session.apiKey);
     _device = TextEditingController(text: session.deviceCode);
     ref.read(apiProvider).pendingCount().then((count) {
       if (mounted) setState(() => _pending = count);
@@ -47,6 +52,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _url.dispose();
+    _key.dispose();
     _device.dispose();
     super.dispose();
   }
@@ -102,10 +108,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 MenuRow(
                   icon: Icons.print_outlined,
                   label: 'Printers',
-                  detail: 'Copy receipt into a printer app',
-                  onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Use Print on a receipt to copy thermal text. Bluetooth pairing waits for a physical printer.')),
-                  ),
+                  detail: ref.watch(printerProvider).detail,
+                  onTap: () => context.push('/printers'),
                 ),
                 const Divider(),
                 MenuRow(
@@ -180,14 +184,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: 12),
                 TextField(
+                  controller: _key,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'API key'),
+                  onSubmitted: (value) => ref.read(sessionProvider.notifier).updateApiKey(value),
+                ),
+                const SizedBox(height: 12),
+                TextField(
                   controller: _device,
                   decoration: const InputDecoration(labelText: 'Device code'),
                   onSubmitted: (value) => ref.read(sessionProvider.notifier).updateDeviceCode(value.trim()),
                 ),
                 const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final pairing = await Navigator.of(context).push<PosPairing>(
+                      MaterialPageRoute(builder: (_) => const PairingScanScreen()),
+                    );
+                    if (pairing == null || !mounted) return;
+                    _url.text = pairing.url;
+                    _key.text = pairing.key;
+                    await ref.read(sessionProvider.notifier).updateConnection(url: pairing.url, apiKey: pairing.key);
+                    setState(() {
+                      _message = 'Paired from QR.';
+                      _tone = StatusTone.good;
+                    });
+                  },
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Scan pairing QR'),
+                ),
+                const SizedBox(height: 10),
                 FilledButton(
                   onPressed: () async {
-                    await ref.read(sessionProvider.notifier).updateBaseUrl(_url.text.trim());
+                    await ref.read(sessionProvider.notifier).updateConnection(url: _url.text.trim(), apiKey: _key.text.trim());
                     await ref.read(sessionProvider.notifier).updateDeviceCode(_device.text.trim());
                     setState(() {
                       _message = 'Saved.';

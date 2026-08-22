@@ -15,11 +15,8 @@
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         <div class="brand" style="padding:0;">
-            <div class="brand-mark">
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" width="22" height="22">
-                    <path d="M7 14c4-9 13-9 14-3-3 8-10 11-14 8Z"/>
-                    <path d="M4 20c2-2 4-4 6-5"/>
-                </svg>
+            <div class="brand-mark" style="width:72px;height:72px;border-radius:16px;">
+                <img src="{% static 'console/img/logo.jpeg' %}" alt="Pickleball West">
             </div>
             <div class="brand-text" style="color:#0b1f3a;">PICKLEBALL POS</div>
         </div>

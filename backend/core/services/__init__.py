@@ -7,7 +7,6 @@ from core.services.membership_service import MembershipService
 from core.services.pricing_service import PricingService
 from core.services.purchasing_service import PurchasingService
 from core.services.receipt_service import ReceiptService
-from core.services.report_pdf import ReportPdfService
 from core.services.report_service import ReportService
 from core.services.sale_service import SaleService
 from core.services.shift_service import ShiftService
@@ -21,7 +20,6 @@ __all__ = [
     "PricingService",
     "PurchasingService",
     "ReceiptService",
-    "ReportPdfService",
     "ReportService",
     "SaleService",
     "ShiftService",

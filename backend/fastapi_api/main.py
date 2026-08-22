@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from core.config.settings import get_settings
 from fastapi_api.app.api.v1.router import api_v1_router
+from fastapi_api.app.middleware.api_key import ApiKeyMiddleware
 from fastapi_api.app.middleware.rate_limit import RateLimitMiddleware
 
 settings = get_settings()
@@ -22,6 +23,7 @@ app = FastAPI(
     openapi_url="/api/openapi.json",
 )
 
+app.add_middleware(ApiKeyMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,

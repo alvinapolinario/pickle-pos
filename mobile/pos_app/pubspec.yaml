@@ -17,6 +17,8 @@ dependencies:
   uuid: ^4.5.1
   intl: ^0.20.2
   mobile_scanner: ^7.4.0
+  print_bluetooth_thermal: ^1.1.9
+  permission_handler: ^12.0.1
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +27,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo.jpeg

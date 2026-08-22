@@ -2,6 +2,29 @@
 
 {% block content %}
 <article class="card module-card">
+    <h2 style="margin: 0 0 8px; font-size: 16px;">POS tablet pairing</h2>
+    <p style="margin: 0 0 16px; color: #6b7c90;">Scan this QR in the Flutter app (Sign in → gear, or More → Device) to load the API URL and key. Tablets must send that key on every request.</p>
+    <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+        <img src="{% url 'console:pos_pairing_qr' %}?v={{ pairing.api_key|slice:':8' }}" alt="POS pairing QR" width="196" height="196" style="border: 1px solid #e4ebe6; border-radius: 12px; background: #fff;">
+        <form method="post" style="flex: 1; min-width: 240px;">
+            {% csrf_token %}
+            <label class="field" for="public_base_url">
+                <span>API URL</span>
+                <input class="field-input" id="public_base_url" name="public_base_url" value="{{ pairing.public_base_url }}" placeholder="http://10.0.0.12:7101">
+            </label>
+            <p style="margin: 0 0 8px; color: #6b7c90; font-size: 13px;">Use this computer’s LAN IP so a physical tablet can reach FastAPI. Example: <code>http://10.250.106.91:7101</code></p>
+            <label class="field" for="api_key">
+                <span>API key</span>
+                <input class="field-input" id="api_key" value="{{ pairing.api_key }}" readonly>
+            </label>
+            <div style="padding-top: 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn-primary" type="submit" name="intent" value="pairing">Save API URL</button>
+                <button class="btn-primary btn-compact" type="submit" name="intent" value="regenerate">Regenerate key</button>
+            </div>
+        </form>
+    </div>
+</article>
+<article class="card module-card" style="margin-top: 16px;">
     <p style="margin: 0 0 16px; color: #6b7c90;">Turn VAT off for courts or canteens that are not VAT-registered. Selling prices stay the same; the register just stops extracting 12% tax.</p>
     <form method="post">
         {% csrf_token %}

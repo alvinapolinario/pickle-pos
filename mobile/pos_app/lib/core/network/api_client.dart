@@ -24,6 +24,9 @@ class ApiClient {
         onRequest: (options, handler) {
           final session = ref.read(sessionProvider);
           options.baseUrl = '${session.baseUrl}/api/v1';
+          if (session.apiKey.isNotEmpty) {
+            options.headers['X-Api-Key'] = session.apiKey;
+          }
           if (session.accessToken != null) {
             options.headers['Authorization'] = 'Bearer ${session.accessToken}';
           }
@@ -142,10 +145,44 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> quote(List<Map<String, dynamic>> items, {String discount = '0'}) async {
+  Future<List<dynamic>> customers({String? q}) async {
+    final response = await _dio.get(
+      '/customers',
+      queryParameters: {if (q != null && q.isNotEmpty) 'q': q},
+    );
+    return response.data as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>?> customer(int customerId) async {
+    try {
+      final response = await _dio.get('/customers/$customerId');
+      return Map<String, dynamic>.from(response.data as Map);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createCustomer({required String name, String mobile = '', String email = ''}) async {
+    final response = await _dio.post(
+      '/customers',
+      data: {
+        'name': name,
+        if (mobile.isNotEmpty) 'mobile': mobile,
+        if (email.isNotEmpty) 'email': email,
+      },
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
+  Future<Map<String, dynamic>> quote(List<Map<String, dynamic>> items, {String discount = '0', int? customerId}) async {
     final response = await _dio.post(
       '/sales/quote',
-      data: {'items': items, 'discount_amount': discount},
+      data: {
+        'items': items,
+        'discount_amount': discount,
+        if (customerId != null) 'customer_id': customerId,
+      },
     );
     return Map<String, dynamic>.from(response.data as Map);
   }
@@ -156,6 +193,7 @@ class ApiClient {
     required List<Map<String, dynamic>> payments,
     required String clientSaleUuid,
     int? deviceId,
+    int? customerId,
     String discount = '0',
     bool hold = false,
   }) async {
@@ -166,6 +204,7 @@ class ApiClient {
       'discount_amount': discount,
       'client_sale_uuid': clientSaleUuid,
       if (deviceId != null) 'device_id': deviceId,
+      if (customerId != null) 'customer_id': customerId,
       if (!hold) 'payments': payments,
     };
     try {
@@ -329,6 +368,7 @@ class ApiClient {
     required int courtId,
     required DateTime startAt,
     required DateTime endAt,
+    int? customerId,
   }) async {
     final response = await _dio.post(
       '/bookings/quote',
@@ -336,6 +376,7 @@ class ApiClient {
         'court_id': courtId,
         'start_at': startAt.toUtc().toIso8601String(),
         'end_at': endAt.toUtc().toIso8601String(),
+        if (customerId != null) 'customer_id': customerId,
       },
     );
     return Map<String, dynamic>.from(response.data as Map);
@@ -347,6 +388,7 @@ class ApiClient {
     required DateTime endAt,
     String paymentMethod = 'cash',
     String notes = '',
+    int? customerId,
   }) async {
     final response = await _dio.post(
       '/bookings',
@@ -356,6 +398,7 @@ class ApiClient {
         'end_at': endAt.toUtc().toIso8601String(),
         'payment_method': paymentMethod,
         'notes': notes,
+        if (customerId != null) 'customer_id': customerId,
       },
     );
     return Map<String, dynamic>.from(response.data as Map);

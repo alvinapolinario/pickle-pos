@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Session {
   const Session({
     this.baseUrl = 'http://10.0.2.2:7101',
+    this.apiKey = '',
     this.accessToken,
     this.refreshToken,
     this.username,
@@ -13,6 +14,7 @@ class Session {
   });
 
   final String baseUrl;
+  final String apiKey;
   final String? accessToken;
   final String? refreshToken;
   final String? username;
@@ -22,6 +24,7 @@ class Session {
 
   Session copyWith({
     String? baseUrl,
+    String? apiKey,
     String? accessToken,
     String? refreshToken,
     String? username,
@@ -33,6 +36,7 @@ class Session {
   }) {
     return Session(
       baseUrl: baseUrl ?? this.baseUrl,
+      apiKey: apiKey ?? this.apiKey,
       accessToken: clearTokens ? null : (accessToken ?? this.accessToken),
       refreshToken: clearTokens ? null : (refreshToken ?? this.refreshToken),
       username: clearTokens ? null : (username ?? this.username),
@@ -52,6 +56,7 @@ class SessionNotifier extends StateNotifier<Session> {
     final prefs = await SharedPreferences.getInstance();
     state = Session(
       baseUrl: prefs.getString('baseUrl') ?? state.baseUrl,
+      apiKey: prefs.getString('apiKey') ?? '',
       accessToken: prefs.getString('accessToken'),
       refreshToken: prefs.getString('refreshToken'),
       username: prefs.getString('username'),
@@ -64,6 +69,7 @@ class SessionNotifier extends StateNotifier<Session> {
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('baseUrl', state.baseUrl);
+    await prefs.setString('apiKey', state.apiKey);
     await prefs.setString('deviceCode', state.deviceCode);
     if (state.accessToken == null) {
       await prefs.remove('accessToken');
@@ -94,6 +100,16 @@ class SessionNotifier extends StateNotifier<Session> {
 
   Future<void> updateBaseUrl(String url) async {
     state = state.copyWith(baseUrl: url);
+    await _persist();
+  }
+
+  Future<void> updateApiKey(String key) async {
+    state = state.copyWith(apiKey: key.trim());
+    await _persist();
+  }
+
+  Future<void> updateConnection({required String url, required String apiKey}) async {
+    state = state.copyWith(baseUrl: url.trim().replaceAll(RegExp(r'/+$'), ''), apiKey: apiKey.trim());
     await _persist();
   }
 

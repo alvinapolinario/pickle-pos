@@ -122,3 +122,19 @@ class RefreshToken(models.Model):
         from django.utils import timezone
 
         return timezone.now() >= self.expires_at
+
+
+class PosConnection(models.Model):
+    """Singleton pairing config so tablets can scan the API URL and key."""
+
+    SINGLETON_PK = 1
+
+    api_key = models.CharField(max_length=80)
+    public_base_url = models.CharField(max_length=255, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "POS connection"
+
+    def __str__(self) -> str:
+        return self.public_base_url or "POS connection"

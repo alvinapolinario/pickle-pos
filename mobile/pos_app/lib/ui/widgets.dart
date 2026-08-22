@@ -8,31 +8,17 @@ class BrandMark extends StatelessWidget {
 
   final double size;
 
+  static const assetPath = 'assets/logo.jpeg';
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF34C759), Color(0xFF1E8A3C)],
-        ),
-        boxShadow: const [
-          BoxShadow(color: Color(0x401E8A3C), blurRadius: 18, offset: Offset(0, 8)),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        'P',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
-          fontSize: size * 0.46,
-          height: 1,
-        ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(size * 0.18),
+      child: Image.asset(
+        assetPath,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -353,22 +339,25 @@ class QuickAction extends StatelessWidget {
             border: Border.all(color: line),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: color),
+                  child: Icon(icon, color: color, size: 22),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text(
                   label,
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: ink, height: 1.2),
                 ),
               ],

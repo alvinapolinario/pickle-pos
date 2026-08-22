@@ -81,3 +81,49 @@ def test_customer_list_renders(django_client, user):
     response = django_client.get(reverse("customers:customer_list"))
     assert response.status_code == 200
     assert b"Add customer" in response.content
+
+
+def _auth_headers(api_client, user):
+    login = api_client.post(
+        "/api/v1/auth/login",
+        json={"username": "cashier1", "password": "secure-pass-123"},
+    )
+    return {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+
+@pytest.mark.django_db(transaction=True)
+def test_api_list_search_and_create_customer(api_client, user, branch):
+    Customer.objects.create(branch=branch, name="Ana Cruz", mobile="09170001111")
+    headers = _auth_headers(api_client, user)
+
+    listed = api_client.get("/api/v1/customers", headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()[0]["name"] == "Ana Cruz"
+
+    search = api_client.get("/api/v1/customers", headers=headers, params={"q": "0917"})
+    assert search.status_code == 200
+    assert search.json()[0]["mobile"] == "09170001111"
+
+    created = api_client.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Mia Santos", "mobile": "09170009999"},
+    )
+    assert created.status_code == 201
+    customer_id = created.json()["id"]
+    fetched = api_client.get(f"/api/v1/customers/{customer_id}", headers=headers)
+    assert fetched.status_code == 200
+    assert fetched.json()["name"] == "Mia Santos"
+
+    duplicate = api_client.post(
+        "/api/v1/customers",
+        headers=headers,
+        json={"name": "Other", "mobile": "09170009999"},
+    )
+    assert duplicate.status_code == 409
+
+
+@pytest.mark.django_db(transaction=True)
+def test_api_customers_require_auth(api_client):
+    assert api_client.get("/api/v1/customers").status_code == 401
+    assert api_client.post("/api/v1/customers", json={"name": "Ada"}).status_code == 401

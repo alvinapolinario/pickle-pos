@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/auth/session.dart';
+import '../../core/customers/selected_customer.dart';
 import '../../core/network/api_client.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
+import '../customers/customer_picker.dart';
 import 'cart_controller.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
@@ -34,7 +36,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       return;
     }
     try {
-      final quote = await ref.read(apiProvider).quote(items);
+      final customerId = ref.read(selectedCustomerProvider)?.id;
+      final quote = await ref.read(apiProvider).quote(items, customerId: customerId);
       if (mounted) setState(() => _quote = quote);
     } catch (_) {
       if (mounted) setState(() => _error = 'Could not refresh totals.');
@@ -56,9 +59,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         payments: const [],
         clientSaleUuid: api.newSaleUuid(),
         deviceId: session.deviceId,
+        customerId: ref.read(selectedCustomerProvider)?.id,
         hold: true,
       );
-      ref.read(cartProvider.notifier).clear();
+      clearTicket(ref);
       if (mounted) context.go('/tickets');
     } catch (_) {
       setState(() => _error = 'Could not hold this order.');
@@ -77,7 +81,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           if (cart.isNotEmpty)
             IconButton(
               onPressed: () {
-                ref.read(cartProvider.notifier).clear();
+                clearTicket(ref);
                 context.pop();
               },
               icon: const Icon(Icons.delete_outline),
@@ -88,6 +92,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           ? const EmptyState(icon: Icons.shopping_bag_outlined, title: 'Cart is empty', detail: 'Add items from the catalog.')
           : Column(
               children: [
+                CustomerBar(onChanged: _refreshQuote),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -137,9 +142,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                   child: SafeArea(
                     top: false,
+                    bottom: false,
                     child: Column(
                       children: [
-                        _row('Discount', _quote?['discount_amount'] ?? 0, color: accent),
+                        _row(
+                          ref.watch(selectedCustomerProvider)?.isMember == true ? 'Member discount' : 'Discount',
+                          _quote?['discount_amount'] ?? 0,
+                          color: accent,
+                        ),
                         const SizedBox(height: 6),
                         _row('Subtotal', _quote?['gross_amount']),
                         if (_quote?['vat_registered'] != false) ...[

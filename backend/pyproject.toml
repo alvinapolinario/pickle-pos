@@ -24,6 +24,7 @@ dependencies = [
     "httpx>=0.27",
     "pillow>=11.0",
     "fpdf2>=2.8",
+    "qrcode>=8.0",
 ]
 
 [project.optional-dependencies]

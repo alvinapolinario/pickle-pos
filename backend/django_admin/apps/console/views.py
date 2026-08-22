@@ -19,6 +19,7 @@ from apps.console.navigation import PAGE_META, page_meta
 from core.domain.auth import user_has_permission
 from core.domain.exceptions import AuthenticationError
 from core.services.auth_service import AuthService
+from core.services.pairing_service import PairingService, qr_png_bytes
 from core.services.report_pdf import ReportPdfService
 from core.services.report_service import ReportService
 
@@ -150,16 +151,30 @@ def module_page(request: HttpRequest, page_name: str) -> HttpResponse:
         ]
         context["empty_message"] = "No roles found. Run seed_rbac first."
     elif page_name == "settings":
+        pairing = PairingService()
         if request.method == "POST":
-            for branch in Branch.objects.all():
-                branch.vat_registered = request.POST.get(f"vat_{branch.id}") == "1"
-                branch.memberships_enabled = request.POST.get(f"memberships_{branch.id}") == "1"
-                branch.save(update_fields=["vat_registered", "memberships_enabled", "updated_at"])
+            intent = request.POST.get("intent")
+            if intent == "pairing":
+                pairing.save_public_url(request.POST.get("public_base_url", ""), request=request)
+            elif intent == "regenerate":
+                pairing.regenerate(request=request)
+            else:
+                for branch in Branch.objects.all():
+                    branch.vat_registered = request.POST.get(f"vat_{branch.id}") == "1"
+                    branch.memberships_enabled = request.POST.get(f"memberships_{branch.id}") == "1"
+                    branch.save(update_fields=["vat_registered", "memberships_enabled", "updated_at"])
             return redirect("console:module", page_name="settings")
         context["branches"] = Branch.objects.order_by("name")
+        context["pairing"] = pairing.get_or_create(request=request)
         return render(request, "console/settings.html", context)
 
     return render(request, "console/module.html", context)
+
+
+@login_required
+def pos_pairing_qr(request: HttpRequest) -> HttpResponse:
+    info = PairingService().get_or_create(request=request)
+    return HttpResponse(qr_png_bytes(info.payload), content_type="image/png")
 
 
 def _report_range(request: HttpRequest) -> tuple[date, date]:

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     app_secret_key: str = "change-me"
     debug: bool = True
-    allowed_hosts: str = "localhost,127.0.0.1"
+    allowed_hosts: str = "*"
 
     postgres_db: str = "pickle_pos"
     postgres_user: str = "pickle_pos"
@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     login_rate_limit: int = 20
     api_rate_limit: int = 120
     audit_retention_days: int = 365
+    mobile_api_key: str = ""
+    public_api_url: str = ""
 
     @property
     def is_production(self) -> bool:

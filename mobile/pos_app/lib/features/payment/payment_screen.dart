@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/auth/session.dart';
+import '../../core/customers/selected_customer.dart';
 import '../../core/network/api_client.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
+import '../customers/customer_picker.dart';
 import '../pos/cart_controller.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
@@ -47,7 +49,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     final items = ref.read(cartProvider.notifier).items;
     if (items.isEmpty) return;
     try {
-      final quote = await ref.read(apiProvider).quote(items);
+      final quote = await ref.read(apiProvider).quote(items, customerId: ref.read(selectedCustomerProvider)?.id);
       setState(() {
         _quote = quote;
         _amount.text = '${quote['net_amount']}';
@@ -80,9 +82,10 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               payments: payments,
               clientSaleUuid: api.newSaleUuid(),
               deviceId: session.deviceId,
+              customerId: ref.read(selectedCustomerProvider)?.id,
             )
           : await api.resumeSale(cart.heldSaleId!, payments);
-      cart.clear();
+      clearTicket(ref);
       if (mounted) context.go('/receipt/${sale['id']}');
     } catch (_) {
       setState(() => _error = 'Saved locally if offline. Open More to sync.');
@@ -117,6 +120,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
         children: [
           Text('Total amount', style: TextStyle(color: muted, fontWeight: FontWeight.w700)),
           MoneyText(net, size: 36),
+          CustomerBar(onChanged: _refreshQuote, padding: const EdgeInsets.only(top: 14)),
           const SizedBox(height: 18),
           const SectionLabel('Payment method'),
           const SizedBox(height: 8),

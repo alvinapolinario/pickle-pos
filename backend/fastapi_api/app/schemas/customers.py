@@ -3,6 +3,13 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 
+class CustomerCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    mobile: str = ""
+    email: str = ""
+    notes: str = ""
+
+
 class CustomerResponse(BaseModel):
     id: int
     branch_id: int

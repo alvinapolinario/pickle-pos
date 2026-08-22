@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
+import '../../core/customers/customer.dart';
+import '../../core/customers/selected_customer.dart';
 import '../../core/network/api_client.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
@@ -127,6 +129,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                             ),
                                         ];
                                         ref.read(cartProvider.notifier).loadHeld(sale['id'] as int, lines);
+                                        final customerId = detail['customer_id'];
+                                        if (customerId is int) {
+                                          final row = await ref.read(apiProvider).customer(customerId);
+                                          ref.read(selectedCustomerProvider.notifier).state =
+                                              row == null ? null : PosCustomer.fromJson(row);
+                                        } else {
+                                          ref.read(selectedCustomerProvider.notifier).state = null;
+                                        }
                                         if (context.mounted) context.push('/cart');
                                       },
                                       style: FilledButton.styleFrom(minimumSize: const Size(88, 40)),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../core/network/api_client.dart';
+import '../../core/printing/printer_service.dart';
 import '../../ui/widgets.dart';
 
 class ReceiptScreen extends ConsumerStatefulWidget {
@@ -19,11 +20,46 @@ class ReceiptScreen extends ConsumerStatefulWidget {
 class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
   Map<String, dynamic>? _receipt;
   String? _error;
+  bool _printing = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  Future<void> _print(String text) async {
+    if (text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nothing to print on this ticket.')),
+        );
+      }
+      return;
+    }
+    final printer = ref.read(printerProvider);
+    if (!printer.hasSaved) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Choose a Bluetooth printer first.')),
+      );
+      context.push('/printers');
+      return;
+    }
+    setState(() => _printing = true);
+    final ok = await ref.read(printerProvider.notifier).printTicket(text);
+    if (!mounted) return;
+    setState(() => _printing = false);
+    final message = ref.read(printerProvider).message ?? (ok ? 'Sent to printer.' : 'Print failed.');
+    if (!ok) {
+      await Clipboard.setData(ClipboardData(text: text));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$message Copied the ticket so you can paste it.')),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _load() async {
@@ -64,6 +100,14 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: muted, fontWeight: FontWeight.w600),
                 ),
+                if ('${receipt['customer'] ?? ''}'.trim().isNotEmpty && '${receipt['customer']}' != 'Walk-in') ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${receipt['customer']}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: accent, fontWeight: FontWeight.w700),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 PosCard(
                   child: Column(
@@ -99,16 +143,11 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () async {
-                          await Clipboard.setData(ClipboardData(text: '${receipt['text']}'));
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Receipt copied. Paste it into your printer app or Notes.')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.print_outlined),
-                        label: const Text('Print'),
+                        onPressed: _printing ? null : () => _print(receipt['text']?.toString() ?? ''),
+                        icon: _printing
+                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.print_outlined),
+                        label: Text(ref.watch(printerProvider).hasSaved ? 'Print' : 'Set printer'),
                       ),
                     ),
                     const SizedBox(width: 10),

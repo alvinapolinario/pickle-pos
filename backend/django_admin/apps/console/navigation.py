@@ -97,7 +97,7 @@ PAGE_META = {
     "report_financial": {"title": "Financial Reports", "subtitle": "Sales, expenses, and profit"},
     "expenses": {"title": "Expenses", "subtitle": "Operating expenses and categories"},
     "audit": {"title": "Audit Log", "subtitle": "Sensitive actions with filters and retention"},
-    "settings": {"title": "System Settings", "subtitle": "Branches, receipts, payments, and tax"},
+    "settings": {"title": "System Settings", "subtitle": "POS pairing, tax, and memberships"},
 }
 
 

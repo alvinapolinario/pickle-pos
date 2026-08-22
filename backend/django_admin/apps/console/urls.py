@@ -13,5 +13,6 @@ urlpatterns = [
     path("app/report-courts/", views.report_courts, name="report_courts"),
     path("app/report-financial/", views.report_financial, name="report_financial"),
     path("app/audit/", views.audit_list, name="audit_list"),
+    path("app/settings/pos-qr.png", views.pos_pairing_qr, name="pos_pairing_qr"),
     path("app/<slug:page_name>/", views.module_page, name="module"),
 ]

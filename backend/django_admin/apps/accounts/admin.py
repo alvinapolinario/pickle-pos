@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from apps.accounts.models import Device, Permission, RefreshToken, Role, User
+from apps.accounts.models import Device, Permission, PosConnection, RefreshToken, Role, User
 
 
 @admin.register(Role)
@@ -38,6 +38,12 @@ class DeviceAdmin(admin.ModelAdmin):
     list_display = ("device_code", "name", "branch", "is_active", "last_seen_at")
     list_filter = ("is_active", "branch")
     search_fields = ("device_code", "name")
+
+
+@admin.register(PosConnection)
+class PosConnectionAdmin(admin.ModelAdmin):
+    list_display = ("public_base_url", "updated_at")
+    readonly_fields = ("updated_at",)
 
 
 @admin.register(RefreshToken)
