@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.sync",
     "apps.courts",
     "apps.expenses",
+    "apps.membership",
 ]
 
 MIDDLEWARE = [

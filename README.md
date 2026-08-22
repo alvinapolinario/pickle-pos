@@ -61,6 +61,7 @@ python manage.py migrate
 python manage.py seed_rbac
 python manage.py seed_courts
 python manage.py seed_expenses
+python manage.py seed_memberships
 python manage.py createsuperuser
 python manage.py runserver 7100
 
@@ -76,6 +77,44 @@ cd backend
 pip install -e ".[dev]"
 pytest ../tests -v
 ```
+
+## CI/CD
+
+Pipelines live in `.github/workflows/`. They run on GitHub after you push; commit and push only trigger them.
+
+```
+push / pull request          tag v1.0.0 or "Run workflow"
+        │                              │
+        ▼                              ▼
+   CI pipeline                    CD pipeline
+ backend tests                  runs CI first
+ Docker build                   publish image to GHCR
+ Flutter analyze/test           optional SSH deploy
+        │
+        ▼
+   "CI passed" gate
+```
+
+**CI** (`.github/workflows/ci.yml`) — every push and pull request.
+
+**CD** (`.github/workflows/cd.yml`) — version tags (`v1.0.0`) or **Actions → CD → Run workflow**. It re-runs CI, then publishes `ghcr.io/<owner>/pickle-pos`. If you set deploy secrets, it SSHs to the server, pulls that image, and restarts Compose.
+
+Release:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+On the server without SSH deploy:
+
+```bash
+export PICKLE_POS_IMAGE=ghcr.io/<owner>/pickle-pos:1.0.0
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Optional deploy secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_KEY`, `DEPLOY_PATH`, and a `GHCR_TOKEN` (classic PAT with `read:packages`) so the server can pull the private image. Create a GitHub Environment named `production` if you want an approval step before deploy.
 
 ## Documentation
 

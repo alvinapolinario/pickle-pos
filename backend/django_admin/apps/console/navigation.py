@@ -41,8 +41,7 @@ NAV_SECTIONS = [
         "label": "Customers",
         "items": [
             {"name": "customers", "label": "Customers", "icon": "users", "url_name": "customers:customer_list"},
-            {"name": "memberships", "label": "Memberships", "icon": "id-card"},
-            {"name": "loyalty", "label": "Loyalty Points", "icon": "star"},
+            {"name": "memberships", "label": "Memberships", "icon": "id-card", "url_name": "membership:membership_list"},
         ],
     },
     {
@@ -89,7 +88,6 @@ PAGE_META = {
     "court_rates": {"title": "Rates & Pricing", "subtitle": "Hourly rates and membership pricing"},
     "customers": {"title": "Customers", "subtitle": "Customer profiles and history"},
     "memberships": {"title": "Memberships", "subtitle": "Tiers, benefits, and active members"},
-    "loyalty": {"title": "Loyalty Points", "subtitle": "Points earned and redeemed"},
     "users": {"title": "Users", "subtitle": "Staff accounts and branch assignment"},
     "roles": {"title": "Roles & Permissions", "subtitle": "Access control for the POS and admin"},
     "cashiers": {"title": "Cashiers", "subtitle": "Cashier profiles and PIN access"},

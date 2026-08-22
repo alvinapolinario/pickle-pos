@@ -1,3 +1,11 @@
+x-backend: &backend
+  image: ${PICKLE_POS_IMAGE:-pickle-pos:local}
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  env_file:
+    - .env
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -22,15 +30,11 @@ services:
       retries: 5
 
   django:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    <<: *backend
     command: >
       sh -c "python django_admin/manage.py migrate --noinput &&
              python django_admin/manage.py collectstatic --noinput &&
              gunicorn --chdir django_admin config.wsgi:application --bind 0.0.0.0:7100 --workers 3 --timeout 60"
-    env_file:
-      - .env
     environment:
       APP_ENV: production
       DEBUG: "false"
@@ -48,17 +52,13 @@ services:
       retries: 5
 
   fastapi:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    <<: *backend
     command: >
       gunicorn fastapi_api.main:app
       --worker-class uvicorn.workers.UvicornWorker
       --bind 0.0.0.0:7101
       --workers 2
       --timeout 60
-    env_file:
-      - .env
     environment:
       APP_ENV: production
       DEBUG: "false"
@@ -77,12 +77,8 @@ services:
       retries: 5
 
   celery-worker:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    <<: *backend
     command: celery -A workers.celery_app worker --loglevel=info
-    env_file:
-      - .env
     environment:
       APP_ENV: production
       DJANGO_SETTINGS_MODULE: config.settings.production
@@ -93,12 +89,8 @@ services:
         condition: service_healthy
 
   celery-beat:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    <<: *backend
     command: celery -A workers.celery_app beat --loglevel=info
-    env_file:
-      - .env
     environment:
       APP_ENV: production
       DJANGO_SETTINGS_MODULE: config.settings.production

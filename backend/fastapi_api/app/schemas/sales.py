@@ -110,6 +110,7 @@ class QuoteRequest(BaseModel):
     items: list[SaleItemIn]
     discount_amount: Decimal = Decimal("0.00")
     branch_id: int | None = None
+    customer_id: int | None = None
 
 
 class QuoteLineResponse(BaseModel):

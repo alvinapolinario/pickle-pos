@@ -1,0 +1,99 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <p class="row-sub">
+        {% if memberships_enabled %}Memberships are on for this branch. Discounts apply on canteen tickets and court bookings when a member is on the sale.{% else %}Memberships are turned off in System Settings. Tiers stay here but prices do not change.{% endif %}
+    </p>
+    <div class="icon-actions">
+        <button class="btn-secondary btn-compact" type="button" data-open-form="{{ tier_url }}" data-modal-title="New membership tier" data-modal-key="tier">
+            {% icon "plus" 16 %}
+            New tier
+        </button>
+        <button class="btn-primary btn-compact" type="button" data-open-form="{{ assign_url }}" data-modal-title="Assign membership" data-modal-key="assign">
+            {% icon "plus" 16 %}
+            Assign member
+        </button>
+    </div>
+</div>
+
+<section class="report-grid">
+    <article class="card module-card">
+        <div class="card-head"><h3>Tiers</h3></div>
+        {% if tiers %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tier</th>
+                    <th>Court</th>
+                    <th>Canteen</th>
+                    <th>Points / ₱</th>
+                    <th>Priority</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tier in tiers %}
+                <tr>
+                    <td class="row-title">{{ tier.name }} <span class="row-sub">{{ tier.code }}</span></td>
+                    <td>{{ tier.court_discount_pct }}%</td>
+                    <td>{{ tier.canteen_discount_pct }}%</td>
+                    <td>{{ tier.points_per_peso }}</td>
+                    <td>{% if tier.priority_booking %}Yes{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            <h3>No tiers yet</h3>
+            <p>Add Regular, Student, Premium, or Club. Or run <code>seed_memberships</code>.</p>
+        </div>
+        {% endif %}
+    </article>
+
+    <article class="card module-card">
+        <div class="card-head"><h3>Members</h3></div>
+        {% if memberships %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Customer</th>
+                    <th>Tier</th>
+                    <th>Starts</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in memberships %}
+                <tr>
+                    <td class="row-title">{{ row.customer.name }}</td>
+                    <td>{{ row.tier.name }}</td>
+                    <td>{{ row.started_on|date:"M j, Y" }}</td>
+                    <td>{{ row.expires_on|date:"M j, Y"|default:"—" }}</td>
+                    <td><span class="status">{{ row.status|upper }}</span></td>
+                    <td>
+                        {% if row.status == "active" %}
+                        <form method="post" action="{% url 'membership:membership_cancel' row.pk %}" data-confirm="Cancel membership for {{ row.customer.name }}?">
+                            {% csrf_token %}
+                            <button class="icon-action icon-action-danger" type="submit" aria-label="Cancel">{% icon "ban" 16 %}</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            <h3>No members yet</h3>
+            <p>Assign a tier to a customer. The next canteen sale or court booking uses their rates.</p>
+        </div>
+        {% endif %}
+    </article>
+</section>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

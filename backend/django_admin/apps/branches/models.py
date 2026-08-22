@@ -14,6 +14,7 @@ class Branch(models.Model):
     timezone = models.CharField(max_length=50, default="Asia/Manila")
     vat_registered = models.BooleanField(default=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=4, default=Decimal("0.1200"))
+    memberships_enabled = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

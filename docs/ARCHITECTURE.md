@@ -359,7 +359,7 @@ Base: `/api/v1`
 | shifts | Shift management, cash transactions |
 | courts | Courts, rates, bookings, schedule |
 | customers | Customers, loyalty |
-| membership | Tiers, benefits (feature-flagged) |
+| membership | Tiers, assignments, loyalty ledger (branch `memberships_enabled` flag) |
 | purchasing | Suppliers, POs, receiving |
 | expenses | Expense tracking |
 | reports | Dashboards, exports |

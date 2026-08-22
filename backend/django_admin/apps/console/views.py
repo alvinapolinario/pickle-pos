@@ -19,6 +19,7 @@ from apps.console.navigation import PAGE_META, page_meta
 from core.domain.auth import user_has_permission
 from core.domain.exceptions import AuthenticationError
 from core.services.auth_service import AuthService
+from core.services.report_pdf import ReportPdfService
 from core.services.report_service import ReportService
 
 
@@ -152,7 +153,8 @@ def module_page(request: HttpRequest, page_name: str) -> HttpResponse:
         if request.method == "POST":
             for branch in Branch.objects.all():
                 branch.vat_registered = request.POST.get(f"vat_{branch.id}") == "1"
-                branch.save(update_fields=["vat_registered", "updated_at"])
+                branch.memberships_enabled = request.POST.get(f"memberships_{branch.id}") == "1"
+                branch.save(update_fields=["vat_registered", "memberships_enabled", "updated_at"])
             return redirect("console:module", page_name="settings")
         context["branches"] = Branch.objects.order_by("name")
         return render(request, "console/settings.html", context)
@@ -183,6 +185,17 @@ def _csv_response(filename: str, headers: list[str], rows: list[list]) -> HttpRe
     return response
 
 
+def _pdf_response(filename: str, content: bytes) -> HttpResponse:
+    response = HttpResponse(content, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+def _branch_label(request: HttpRequest) -> str:
+    branch = request.user.branch if getattr(request.user, "branch_id", None) else None
+    return branch.name if branch else "All branches"
+
+
 @login_required
 def report_sales(request: HttpRequest) -> HttpResponse:
     start, end = _report_range(request)
@@ -193,6 +206,11 @@ def report_sales(request: HttpRequest) -> HttpResponse:
             f"sales-{start.isoformat()}-{end.isoformat()}.csv",
             ["Day", "Tickets", "Net"],
             [[row["day"], row["count"], row["total"]] for row in report["days"]],
+        )
+    if request.GET.get("export") == "pdf":
+        return _pdf_response(
+            f"sales-{start.isoformat()}-{end.isoformat()}.pdf",
+            ReportPdfService().sales(report, branch_name=_branch_label(request)),
         )
     meta = page_meta("report_sales")
     return render(
@@ -220,6 +238,11 @@ def report_courts(request: HttpRequest) -> HttpResponse:
             f"courts-{start.isoformat()}-{end.isoformat()}.csv",
             ["Court", "Bookings", "Cancelled", "Hours", "Revenue"],
             [[row["name"], row["bookings"], row["cancelled"], row["hours"], row["revenue"]] for row in report["courts"]],
+        )
+    if request.GET.get("export") == "pdf":
+        return _pdf_response(
+            f"courts-{start.isoformat()}-{end.isoformat()}.pdf",
+            ReportPdfService().courts(report, branch_name=_branch_label(request)),
         )
     meta = page_meta("report_courts")
     return render(
@@ -251,6 +274,11 @@ def report_inventory(request: HttpRequest) -> HttpResponse:
                 for row in report["stock"]
             ],
         )
+    if request.GET.get("export") == "pdf":
+        return _pdf_response(
+            f"inventory-{start.isoformat()}-{end.isoformat()}.pdf",
+            ReportPdfService().inventory(report, branch_name=_branch_label(request)),
+        )
     meta = page_meta("report_inventory")
     return render(
         request,
@@ -277,6 +305,11 @@ def report_financial(request: HttpRequest) -> HttpResponse:
             f"financial-{start.isoformat()}-{end.isoformat()}.csv",
             ["Line", "Amount"],
             [[row["label"], row["amount"]] for row in report["lines"]],
+        )
+    if request.GET.get("export") == "pdf":
+        return _pdf_response(
+            f"financial-{start.isoformat()}-{end.isoformat()}.pdf",
+            ReportPdfService().financial(report, branch_name=_branch_label(request)),
         )
     meta = page_meta("report_financial")
     return render(

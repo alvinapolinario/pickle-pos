@@ -11,6 +11,7 @@
                     <th>Branch</th>
                     <th>Code</th>
                     <th>VAT registered</th>
+                    <th>Memberships</th>
                 </tr>
             </thead>
             <tbody>
@@ -22,6 +23,12 @@
                         <label>
                             <input type="checkbox" name="vat_{{ branch.id }}" value="1" {% if branch.vat_registered %}checked{% endif %}>
                             Charge / show VAT
+                        </label>
+                    </td>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="memberships_{{ branch.id }}" value="1" {% if branch.memberships_enabled %}checked{% endif %}>
+                            Member discounts
                         </label>
                     </td>
                 </tr>

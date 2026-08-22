@@ -76,7 +76,12 @@ def list_bookings(
 @router.post("/bookings/quote", response_model=BookingQuoteResponse)
 def quote_booking(payload: BookingQuoteRequest, current_user: AuthenticatedUser = Depends(get_current_user)):
     try:
-        quoted = service.quote(court_id=payload.court_id, start_at=payload.start_at, end_at=payload.end_at)
+        quoted = service.quote(
+            court_id=payload.court_id,
+            start_at=payload.start_at,
+            end_at=payload.end_at,
+            customer_id=payload.customer_id,
+        )
     except DomainError as exc:
         raise_domain(exc)
     court = quoted["court"]

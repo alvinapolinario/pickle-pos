@@ -157,10 +157,19 @@ Full refund of a paid booking. Cancels the slot. Amount is server-authoritative 
 ## Customers & Membership
 
 ### customers
-`name`, `mobile`, `email`, `membership_tier_id`, `loyalty_points`, `notes`
+`name`, `mobile`, `email`, `loyalty_points`, `notes`
 
-### membership_tiers (feature-flagged)
-`code`, `name`, `court_discount_pct`, `canteen_discount_pct`
+### membership_tiers
+`branch_id`, `code`, `name`, `court_discount_pct`, `canteen_discount_pct`, `priority_booking`, `points_per_peso`
+
+### memberships
+`customer_id`, `tier_id`, `started_on`, `expires_on`, `status` (active / expired / cancelled)
+
+### loyalty_transactions
+Append-only points ledger: `points` (signed), `kind` (earn / reverse), `source_type`, `source_id`
+
+### branches
+`memberships_enabled` — feature flag. When false, tiers stay but discounts and points do not apply.
 
 ---
 

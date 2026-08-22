@@ -71,10 +71,12 @@ class PricingService:
         branch_id: int,
         lines: list[QuoteLineInput],
         discount_amount: Decimal = Decimal("0.00"),
+        customer_id: int | None = None,
         config: PricingConfig | None = None,
     ) -> TicketQuote:
         from apps.branches.models import Branch
         from apps.products.models import Product
+        from core.services.membership_service import MembershipService
 
         if not lines:
             raise DomainError("Add at least one item.")
@@ -117,6 +119,9 @@ class PricingService:
             )
 
         gross_total = money(sum((line.line_gross for line in priced), Decimal("0.00")))
+        discount = money(
+            discount + MembershipService().canteen_discount(branch_id=branch_id, customer_id=customer_id, gross=gross_total)
+        )
         if discount > gross_total:
             raise DomainError("Discount cannot exceed the ticket total.")
 

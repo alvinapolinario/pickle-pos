@@ -8,8 +8,10 @@ class BranchSettingsResponse(BaseModel):
     branch_name: str
     vat_registered: bool
     tax_rate: Decimal
+    memberships_enabled: bool = True
 
 
 class BranchSettingsUpdate(BaseModel):
     vat_registered: bool | None = None
     tax_rate: Decimal | None = Field(default=None, ge=0, le=1)
+    memberships_enabled: bool | None = None

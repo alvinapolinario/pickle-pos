@@ -11,3 +11,7 @@ class CustomerResponse(BaseModel):
     email: str = ""
     notes: str = ""
     is_active: bool
+    loyalty_points: int = 0
+    membership_tier: str = ""
+    canteen_discount_pct: Decimal = Decimal("0")
+    court_discount_pct: Decimal = Decimal("0")

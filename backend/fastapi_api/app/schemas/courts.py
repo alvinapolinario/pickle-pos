@@ -44,6 +44,7 @@ class BookingQuoteRequest(BaseModel):
     court_id: int
     start_at: datetime
     end_at: datetime
+    customer_id: int | None = None
 
 
 class BookingQuoteResponse(BaseModel):

@@ -88,6 +88,15 @@ def test_report_pages_render(django_client, user):
     csv_sales = django_client.get(reverse("console:report_sales") + "?export=csv")
     assert csv_sales.status_code == 200
     assert "text/csv" in csv_sales["Content-Type"]
+    pdf_sales = django_client.get(reverse("console:report_sales") + "?export=pdf")
+    assert pdf_sales.status_code == 200
+    assert pdf_sales["Content-Type"] == "application/pdf"
+    assert pdf_sales.content.startswith(b"%PDF")
+    pdf_fin = django_client.get(reverse("console:report_financial") + "?export=pdf")
+    assert pdf_fin.status_code == 200
+    assert pdf_fin.content.startswith(b"%PDF")
+    assert django_client.get(reverse("console:report_inventory") + "?export=pdf").content.startswith(b"%PDF")
+    assert django_client.get(reverse("console:report_courts") + "?export=pdf").content.startswith(b"%PDF")
     assert django_client.get(reverse("console:report_inventory")).status_code == 200
     assert django_client.get(reverse("console:report_financial")).status_code == 200
     assert django_client.get(reverse("expenses:expense_list")).status_code == 200

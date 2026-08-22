@@ -74,6 +74,7 @@ class SaleService:
                     QuoteLineInput(line.product_id, line.quantity, line.modifier_total) for line in lines
                 ],
                 discount_amount=discount_amount,
+                customer_id=customer.id if customer else None,
             )
 
             change = money(0)
@@ -144,6 +145,17 @@ class SaleService:
                         reference=payment.reference,
                     )
             self._audit("sale.create" if not hold else "sale.hold", sale, {"status": sale.status})
+            if not hold and customer:
+                from core.services.membership_service import MembershipService
+
+                MembershipService().award_points(
+                    customer_id=customer.id,
+                    branch_id=shift.branch_id,
+                    amount=quote.net_amount,
+                    source_type="sale",
+                    source_id=sale.id,
+                    notes=sale.transaction_number,
+                )
             return sale
 
     def resume_sale(
@@ -195,6 +207,17 @@ class SaleService:
             )
             HeldOrder.objects.filter(sale=sale).delete()
             self._audit("sale.resume", sale, {"status": sale.status})
+            if sale.customer_id:
+                from core.services.membership_service import MembershipService
+
+                MembershipService().award_points(
+                    customer_id=sale.customer_id,
+                    branch_id=sale.branch_id,
+                    amount=sale.net_amount,
+                    source_type="sale",
+                    source_id=sale.id,
+                    notes=sale.transaction_number,
+                )
             return sale
 
     def void_sale(self, *, sale_id: int, cashier_id: int, reason: str = ""):
@@ -233,6 +256,9 @@ class SaleService:
 
             HeldOrder.objects.filter(sale=sale).delete()
             self._audit("sale.void", sale, {"reason": reason})
+            from core.services.membership_service import MembershipService
+
+            MembershipService().reverse_points(source_type="sale", source_id=sale.id, notes=reason)
             return sale
 
     def refund_sale(
@@ -316,6 +342,17 @@ class SaleService:
             refund.amount = total
             refund.save(update_fields=["amount"])
             self._audit("sale.refund", sale, {"refund": refund.refund_number, "amount": str(total)})
+            if sale.customer_id:
+                from core.services.membership_service import MembershipService
+
+                MembershipService().clawback_points(
+                    customer_id=sale.customer_id,
+                    branch_id=sale.branch_id,
+                    amount=total,
+                    source_type="sale_refund",
+                    source_id=refund.id,
+                    notes=refund.refund_number,
+                )
             return refund
 
     def _settle_payments(self, net: Decimal, payments: list[PaymentInput]) -> tuple[Decimal, str]:

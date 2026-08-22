@@ -18,6 +18,7 @@ DEFAULT_PERMISSIONS = [
     ("users.manage", "Manage users", "users"),
     ("settings.manage", "Manage system settings", "settings"),
     ("audit.view", "View audit logs", "audit"),
+    ("membership.manage", "Manage memberships and tiers", "membership"),
 ]
 
 DEFAULT_ROLES = {
@@ -36,6 +37,7 @@ DEFAULT_ROLES = {
             "users.manage",
             "settings.manage",
             "audit.view",
+            "membership.manage",
         ],
     },
     "manager": {
@@ -47,6 +49,7 @@ DEFAULT_ROLES = {
             "courts.*",
             "reports.view",
             "audit.view",
+            "membership.manage",
         ],
     },
     "cashier": {

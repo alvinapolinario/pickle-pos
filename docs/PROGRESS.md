@@ -2,7 +2,7 @@
 
 > Last updated: **2026-08-22**  
 > Current phase: **Phase 7 — Hardening (Complete)**  
-> Next: CI/CD, PDF reports, membership, Bluetooth print
+> Next: Bluetooth print, load tests, Flutter member picker
 
 This document tracks all architectural decisions, implemented work, test status, and remaining tasks across the full project roadmap.
 
@@ -17,10 +17,10 @@ This document tracks all architectural decisions, implemented work, test status,
 | Phase 2 — Product & Inventory | **Complete** (optional variants/modifiers skipped) |
 | Phase 3 — POS Core | **Complete** (Bluetooth thermal print left for device hardware) |
 | Phase 4 — Android POS | **Complete** (Bluetooth thermal print left for device hardware) |
-| Phase 5 — Court Management | **Complete** (membership still feature-flagged / skipped) |
-| Phase 6 — Reporting | **Complete** (PDF export still deferred) |
-| Phase 7 — Hardening | **Complete** (CI/CD and load tests still later) |
-| Automated tests | **110 passed, 1 skipped** |
+| Phase 5 — Court Management | **Complete** |
+| Phase 6 — Reporting | **Complete** |
+| Phase 7 — Hardening | **Complete** (load tests still later) |
+| Automated tests | **115 passed, 1 skipped** |
 | Git commits | None yet (initial scaffold) |
 
 ---
@@ -68,8 +68,8 @@ These decisions were made during the initial design session and should not chang
 | 2 | Product & Inventory | Done | 100% |
 | 3 | POS Core | Done | 100% |
 | 4 | Android POS | Done | 100% |
-| 5 | Court Management | Done | 90% |
-| 6 | Reporting | Done | 95% |
+| 5 | Court Management | Done | 100% |
+| 6 | Reporting | Done | 100% |
 | 7 | Hardening & Production | Done | 90% |
 
 ---
@@ -196,13 +196,12 @@ These decisions were made during the initial design session and should not chang
 ### Phase 1 — Not Done / Deferred
 
 - [ ] Initial git commit
-- [ ] `docker compose up` verified end-to-end in this environment
-- [ ] Production `docker-compose.prod.yml`
-- [ ] CI pipeline (GitHub Actions or similar)
-- [ ] Rate limiting middleware on FastAPI
-- [ ] Failed login lockout / brute-force protection
-- [ ] Full Django web login UI (currently admin-only + placeholder dashboard)
-- [ ] Device registration API endpoint (model exists, API not yet exposed)
+- [x] Production `docker-compose.prod.yml`
+- [x] CI pipeline (GitHub Actions) plus CD to GHCR
+- [x] Rate limiting middleware on FastAPI
+- [x] Failed login lockout / brute-force protection
+- [x] Django web login UI (console)
+- [x] Device registration API endpoint
 
 ---
 
@@ -346,7 +345,7 @@ These decisions were made during the initial design session and should not chang
 
 ## Phase 5 — Court Management
 
-**Status: Complete** (membership still feature-flagged / skipped)
+**Status: Complete**
 
 ### 5.1 Courts & Pricing
 
@@ -373,19 +372,20 @@ These decisions were made during the initial design session and should not chang
 - [x] Tests for double-booking prevention
 - [x] Flutter Bookings tab (live date/court/slot grid)
 
-### 5.3 Membership (Feature-flagged)
+### 5.3 Membership
 
-- [ ] Django app: `membership`
-- [ ] `MembershipTier` model (Regular, Student, Premium, Club)
-- [ ] Benefits: court discount, canteen discount, priority booking, loyalty points
-- [ ] Feature flag to enable/disable module
-- [ ] Apply membership pricing in court and canteen services
+- [x] Django app: `membership`
+- [x] `MembershipTier` model (Regular, Student, Premium, Club)
+- [x] Benefits: court discount, canteen discount, priority booking, loyalty points
+- [x] Feature flag `branch.memberships_enabled`
+- [x] Apply membership pricing in court and canteen services
+- [x] Loyalty ledger on paid sales/bookings; reverse on void/refund
 
 ---
 
 ## Phase 6 — Reporting
 
-**Status: Complete** (PDF export still deferred)
+**Status: Complete**
 
 ### 6.1 Dashboard
 
@@ -400,6 +400,7 @@ These decisions were made during the initial design session and should not chang
 - [x] By product, cashier, payment method, hour, and day
 - [x] Top-selling products
 - [x] CSV export (daily totals)
+- [x] PDF export (KPIs, by day, products, cashiers)
 
 ### 6.3 Inventory Reports
 
@@ -407,18 +408,20 @@ These decisions were made during the initial design session and should not chang
 - [x] Stock valuation, wastage, expired items
 - [x] Fast/slow moving products
 - [x] CSV export (stock snapshot)
+- [x] PDF export (valuation, stock snapshot)
 
 ### 6.4 Court Reports
 
 - [x] Court revenue, utilization, booking count
 - [x] Peak hours, revenue per court, cancellation rate
 - [x] CSV export (by court)
+- [x] PDF export (utilization and by court)
 
 ### 6.5 Financial Summary
 
 - [x] Gross sales, discounts, refunds, expenses
 - [x] Gross profit, estimated net income
-- [x] CSV export (P&L lines); PDF/Celery still later
+- [x] CSV and PDF export (P&L lines) — generated in-request, no Celery queue
 
 ---
 
@@ -449,6 +452,7 @@ These decisions were made during the initial design session and should not chang
 - [x] Structured process logging in production settings
 - [x] Health checks probe the database
 - [x] `docker-compose.prod.yml` with Gunicorn workers
+- [x] GitHub Actions CI (pytest, Docker build, Flutter) and CD (GHCR image on `v*` tags)
 
 ### 7.4 Testing (Full Suite)
 
@@ -527,7 +531,8 @@ pickle-pos/
 | Courts API | 1 | Pass |
 | Reports | 5 | Pass |
 | Security / audit | 11 | Pass |
-| **Total** | **111** | **110 passing, 1 skipped** |
+| Memberships | 5 | Pass |
+| **Total** | **116** | **115 passing, 1 skipped** |
 
 Run tests:
 ```bash
@@ -542,23 +547,21 @@ backend\.venv\Scripts\pytest -v
 |------|----------|-------|
 | No git commits yet | Medium | Now |
 | Docker end-to-end not verified locally | Medium | Now |
-| No CI/CD pipeline | Medium | Next |
 | Dedicated load tests | Medium | Next |
 | Dashboard shows placeholder data only | Low | Phase 6 leftover |
 | Redis optional in tests (by design) | Info | — |
 | Bluetooth thermal printer not wired | Medium | Phase 4 leftover |
 | Drift SQLite catalog cache not yet used (JSON queue) | Medium | Phase 4 leftover |
 | Booking overlap uses service lock, not Postgres EXCLUDE | Medium | Phase 5 leftover |
-| Membership module not started | Medium | Phase 5 leftover |
-| PDF report export | Medium | Phase 6 leftover |
+| Flutter POS customer picker for member rates | Medium | Next |
 
 ---
 
 ## Recommended Next Actions
 
-1. **Create initial git commit**
+1. **Create initial git commit** and push so GitHub Actions can run
 2. **Use `docker-compose.prod.yml` with real secrets** when deploying
-3. **CI/CD pipeline** and a short load test of sales + booking conflicts
+3. **Tag `v1.0.0`** when you want CD to publish `ghcr.io/<owner>/pickle-pos`
 4. **Bluetooth printing** when a physical printer is available
 
 ---
@@ -579,3 +582,6 @@ backend\.venv\Scripts\pytest -v
 | 2026-08-22 | Booking refunds plus Phase 6 sales and court reports |
 | 2026-08-22 | Phase 6 finished: inventory + financial reports, expenses ledger |
 | 2026-08-22 | Phase 7 hardening: lockout, rate limits, RBAC on money actions, audit viewer, prod Compose |
+| 2026-08-22 | CI/CD: GitHub Actions pytest + Docker + Flutter; GHCR publish on version tags |
+| 2026-08-22 | Memberships: tiers, assignments, court/canteen discounts, loyalty points |
+| 2026-08-22 | PDF export on sales, court, inventory, and financial reports |

@@ -163,6 +163,7 @@ def quote_sale(
             branch_id=branch_id,
             lines=[QuoteLineInput(line.product_id, line.quantity, line.modifier_total) for line in payload.items],
             discount_amount=payload.discount_amount,
+            customer_id=payload.customer_id,
         )
     except DomainError as exc:
         raise_domain(exc)

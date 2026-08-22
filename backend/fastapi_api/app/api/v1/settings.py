@@ -24,6 +24,7 @@ def _response(branch: Branch) -> BranchSettingsResponse:
         branch_name=branch.name,
         vat_registered=branch.vat_registered,
         tax_rate=branch.tax_rate,
+        memberships_enabled=branch.memberships_enabled,
     )
 
 
@@ -42,5 +43,7 @@ def update_settings(
         branch.vat_registered = payload.vat_registered
     if payload.tax_rate is not None:
         branch.tax_rate = payload.tax_rate
-    branch.save(update_fields=["vat_registered", "tax_rate", "updated_at"])
+    if payload.memberships_enabled is not None:
+        branch.memberships_enabled = payload.memberships_enabled
+    branch.save(update_fields=["vat_registered", "tax_rate", "memberships_enabled", "updated_at"])
     return _response(branch)

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query
 
 from apps.customers.models import Customer
 from core.domain.auth import AuthenticatedUser
+from core.services.membership_service import MembershipService
 from fastapi_api.app.dependencies.auth import get_current_user
 from fastapi_api.app.schemas.customers import CustomerResponse
 
@@ -21,15 +22,23 @@ def list_customers(
         queryset = queryset.filter(branch_id=resolved)
     if q:
         queryset = queryset.filter(Q(name__icontains=q) | Q(mobile__icontains=q) | Q(email__icontains=q))
-    return [
-        CustomerResponse(
-            id=customer.id,
-            branch_id=customer.branch_id,
-            name=customer.name,
-            mobile=customer.mobile,
-            email=customer.email,
-            notes=customer.notes,
-            is_active=customer.is_active,
+    service = MembershipService()
+    payload = []
+    for customer in queryset[:100]:
+        benefits = service.benefits_for(branch_id=customer.branch_id, customer_id=customer.id)
+        payload.append(
+            CustomerResponse(
+                id=customer.id,
+                branch_id=customer.branch_id,
+                name=customer.name,
+                mobile=customer.mobile,
+                email=customer.email,
+                notes=customer.notes,
+                is_active=customer.is_active,
+                loyalty_points=customer.loyalty_points,
+                membership_tier=benefits.tier_code if benefits else "",
+                canteen_discount_pct=benefits.canteen_discount_pct if benefits else 0,
+                court_discount_pct=benefits.court_discount_pct if benefits else 0,
+            )
         )
-        for customer in queryset[:100]
-    ]
+    return payload

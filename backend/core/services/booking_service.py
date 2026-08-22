@@ -33,7 +33,7 @@ class BookingService:
         hours = Decimal(str(minutes / 60))
         return money(self.hourly_rate_for(court, start_at) * hours)
 
-    def quote(self, *, court_id: int, start_at: datetime, end_at: datetime) -> dict:
+    def quote(self, *, court_id: int, start_at: datetime, end_at: datetime, customer_id: int | None = None) -> dict:
         from apps.courts.models import Court
 
         court = Court.objects.filter(pk=court_id, is_active=True).first()
@@ -43,10 +43,18 @@ class BookingService:
         end_at = _aware(end_at)
         if end_at <= start_at:
             raise DomainError("Booking end must be after start.")
+        amount = self.quote_amount(court, start_at, end_at)
+        from core.services.membership_service import MembershipService
+
+        amount = MembershipService().apply_court_rate(
+            branch_id=court.branch_id,
+            customer_id=customer_id,
+            amount=amount,
+        )
         return {
             "court": court,
             "hourly_rate": self.hourly_rate_for(court, start_at),
-            "amount": self.quote_amount(court, start_at, end_at),
+            "amount": amount,
         }
 
     def list_courts(self, *, branch_id: int | None):
@@ -120,6 +128,13 @@ class BookingService:
             if overlap:
                 raise ConflictError("That court slot is already booked.")
             amount = self.quote_amount(court, start_at, end_at)
+            from core.services.membership_service import MembershipService
+
+            amount = MembershipService().apply_court_rate(
+                branch_id=court.branch_id,
+                customer_id=customer_id,
+                amount=amount,
+            )
             paid = bool(payment_method)
             booking = Booking(
                 branch_id=court.branch_id,
@@ -136,6 +151,17 @@ class BookingService:
             booking.booking_number = next_document_number(Booking, court.branch_id, "booking_number", "BK")
             booking.save()
         self._audit("booking.create", booking, booked_by_id, {"amount": str(booking.amount)})
+        if paid and customer_id:
+            from core.services.membership_service import MembershipService
+
+            MembershipService().award_points(
+                customer_id=customer_id,
+                branch_id=booking.branch_id,
+                amount=booking.amount,
+                source_type="booking",
+                source_id=booking.id,
+                notes=booking.booking_number,
+            )
         return booking
 
     def cancel_booking(self, *, booking_id: int, booked_by_id: int | None = None):
@@ -192,6 +218,9 @@ class BookingService:
                 booking.status = Booking.Status.CANCELLED
             booking.save(update_fields=["payment_status", "status", "updated_at"])
         self._audit("booking.refund", booking, refunded_by_id, {"amount": str(refund.amount), "reason": reason})
+        from core.services.membership_service import MembershipService
+
+        MembershipService().reverse_points(source_type="booking", source_id=booking.id, notes=reason)
         return refund
 
     def occupancy(self, *, branch_id: int | None, at: datetime | None = None) -> dict:
