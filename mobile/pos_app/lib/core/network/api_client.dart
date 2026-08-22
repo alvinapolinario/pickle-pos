@@ -257,8 +257,11 @@ class ApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  Future<Map<String, dynamic>> voidSale(int saleId) async {
-    final response = await _dio.post('/sales/$saleId/void', data: {'reason': 'Voided from POS'});
+  Future<Map<String, dynamic>> voidSale(int saleId, {required String passcode, String reason = 'Voided from POS'}) async {
+    final response = await _dio.post(
+      '/sales/$saleId/void',
+      data: {'reason': reason, 'passcode': passcode},
+    );
     return Map<String, dynamic>.from(response.data as Map);
   }
 
@@ -267,6 +270,7 @@ class ApiClient {
     required int shiftId,
     required List<Map<String, dynamic>> lines,
     required String method,
+    required String passcode,
     String reason = '',
   }) async {
     final response = await _dio.post(
@@ -276,6 +280,7 @@ class ApiClient {
         'lines': lines,
         'method': method,
         'reason': reason,
+        'passcode': passcode,
       },
     );
     return Map<String, dynamic>.from(response.data as Map);

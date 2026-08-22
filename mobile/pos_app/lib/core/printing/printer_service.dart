@@ -250,7 +250,7 @@ class PrinterController extends StateNotifier<PrinterSnapshot> {
     );
   }
 
-  Future<bool> printTicket(String text, {int copies = 1}) async {
+  Future<bool> printTicket(String text, {int copies = 1, String? qrData}) async {
     if (!state.hasSaved) {
       state = state.copyWith(
         message: 'Save a printer in More → Printers first.',
@@ -261,7 +261,7 @@ class PrinterController extends StateNotifier<PrinterSnapshot> {
     if (!await reconnect()) {
       return false;
     }
-    final ok = await _safe(() => PrintBluetoothThermal.writeBytes(escPosTicket(text, copies: copies)));
+    final ok = await _safe(() => PrintBluetoothThermal.writeBytes(escPosTicket(text, copies: copies, qrData: qrData)));
     final success = ok == true;
     state = state.copyWith(
       message: success

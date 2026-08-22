@@ -66,7 +66,44 @@ def test_settings_page_shows_pairing_qr(django_client, user):
     assert page.status_code == 200
     assert b"POS tablet pairing" in page.content
     assert b"API key" in page.content
+    assert b"Receipt header" in page.content
+    assert b"Store name" in page.content
     qr = django_client.get("/app/settings/pos-qr.png")
     assert qr.status_code == 200
     assert qr["Content-Type"] == "image/png"
     assert qr.content.startswith(b"\x89PNG")
+
+
+@pytest.mark.django_db
+def test_settings_page_saves_receipt_header(django_client, user, branch):
+    assert django_client.login(username="cashier1", password="secure-pass-123")
+    page = django_client.post(
+        "/app/settings/",
+        {
+            "intent": "receipt",
+            f"receipt_store_name_{branch.id}": "Pickleball West",
+            f"receipt_address_{branch.id}": "88 West Avenue, QC",
+        },
+    )
+    assert page.status_code == 302
+    branch.refresh_from_db()
+    assert branch.receipt_store_name == "Pickleball West"
+    assert branch.receipt_address == "88 West Avenue, QC"
+
+
+@pytest.mark.django_db
+def test_settings_page_saves_void_passcode(django_client, user, branch):
+    assert django_client.login(username="cashier1", password="secure-pass-123")
+    page = django_client.post(
+        "/app/settings/",
+        {
+            "intent": "void_passcode",
+            f"void_passcode_{branch.id}": "2468",
+        },
+    )
+    assert page.status_code == 302
+    branch.refresh_from_db()
+    assert branch.void_passcode_set
+    from core.services.sale_service import SaleService
+
+    SaleService.verify_void_passcode(branch, "2468")

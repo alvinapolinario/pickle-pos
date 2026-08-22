@@ -9,6 +9,7 @@ import '../../core/network/api_client.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
 import '../pos/cart_controller.dart';
+import '../sales/void_dialog.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   const TransactionsScreen({super.key});
@@ -143,6 +144,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       child: const Text('Resume'),
                                     ),
                                   ] else if (_status == 'completed') ...[
+                                    IconButton(
+                                      tooltip: 'Void',
+                                      onPressed: () async {
+                                        final voided = await confirmVoidSale(context, ref, saleId: sale['id'] as int);
+                                        if (voided) await _load();
+                                      },
+                                      icon: const Icon(Icons.block, color: red),
+                                    ),
                                     IconButton(
                                       tooltip: 'Refund',
                                       onPressed: () => context.push('/refund/${sale['id']}'),

@@ -44,6 +44,7 @@ class ResumeSaleRequest(BaseModel):
 
 class VoidSaleRequest(BaseModel):
     reason: str = ""
+    passcode: str = ""
 
 
 class RefundLineIn(BaseModel):
@@ -56,6 +57,7 @@ class RefundRequest(BaseModel):
     lines: list[RefundLineIn]
     method: str = "cash"
     reason: str = ""
+    passcode: str = ""
 
 
 class SaleItemResponse(BaseModel):
@@ -145,6 +147,7 @@ class ReceiptResponse(BaseModel):
     transaction_number: str
     receipt_number: str
     branch_name: str
+    branch_address: str = ""
     cashier: str
     customer: str
     sold_at: str
@@ -152,7 +155,9 @@ class ReceiptResponse(BaseModel):
     tax_amount: Decimal
     change_amount: Decimal
     vat_registered: bool = True
+    status: str = "completed"
     text: str
+    qr_payload: str = ""
     lines: list[ReceiptLineResponse]
 
 

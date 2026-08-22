@@ -1,6 +1,7 @@
 import csv
 from datetime import date
 
+from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -17,7 +18,7 @@ from apps.branches.models import Branch
 from apps.console.dashboard_data import dashboard_data
 from apps.console.navigation import PAGE_META, page_meta
 from core.domain.auth import user_has_permission
-from core.domain.exceptions import AuthenticationError
+from core.domain.exceptions import AuthenticationError, DomainError
 from core.services.auth_service import AuthService
 from core.services.pairing_service import PairingService, qr_png_bytes
 from core.services.report_pdf import ReportPdfService
@@ -158,6 +159,21 @@ def module_page(request: HttpRequest, page_name: str) -> HttpResponse:
                 pairing.save_public_url(request.POST.get("public_base_url", ""), request=request)
             elif intent == "regenerate":
                 pairing.regenerate(request=request)
+            elif intent == "receipt":
+                for branch in Branch.objects.all():
+                    branch.receipt_store_name = (request.POST.get(f"receipt_store_name_{branch.id}") or "").strip()
+                    branch.receipt_address = (request.POST.get(f"receipt_address_{branch.id}") or "").strip()
+                    branch.save(update_fields=["receipt_store_name", "receipt_address", "updated_at"])
+            elif intent == "void_passcode":
+                from core.services.sale_service import SaleService
+
+                for branch in Branch.objects.all():
+                    raw = (request.POST.get(f"void_passcode_{branch.id}") or "").strip()
+                    if raw:
+                        try:
+                            SaleService.set_void_passcode(branch, raw)
+                        except DomainError as exc:
+                            messages.error(request, exc.message)
             else:
                 for branch in Branch.objects.all():
                     branch.vat_registered = request.POST.get(f"vat_{branch.id}") == "1"

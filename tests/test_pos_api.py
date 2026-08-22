@@ -5,6 +5,7 @@ import pytest
 from apps.products.models import Category, Product, ProductUnit, TaxStatus
 from core.domain.inventory import STOCK_IN
 from core.services.inventory_service import InventoryService
+from core.services.sale_service import SaleService
 from core.services.shift_service import ShiftService
 
 
@@ -106,9 +107,17 @@ def test_create_sale_void_and_refund_via_api(api_client, user, branch, product):
     assert detail.status_code == 200
     assert detail.json()["transaction_number"] == body["transaction_number"]
 
+    SaleService.set_void_passcode(branch, "2468")
+    blocked_refund = api_client.post(
+        f"/api/v1/sales/{sale_id}/refund",
+        json={"shift_id": shift.id, "lines": [{"sale_item_id": item_id, "quantity": "1"}], "method": "cash", "passcode": "0000"},
+        headers=headers,
+    )
+    assert blocked_refund.status_code == 400
+
     refunded = api_client.post(
         f"/api/v1/sales/{sale_id}/refund",
-        json={"shift_id": shift.id, "lines": [{"sale_item_id": item_id, "quantity": "1"}], "method": "cash"},
+        json={"shift_id": shift.id, "lines": [{"sale_item_id": item_id, "quantity": "1"}], "method": "cash", "passcode": "2468"},
         headers=headers,
     )
     assert refunded.status_code == 200
@@ -130,9 +139,17 @@ def test_create_sale_void_and_refund_via_api(api_client, user, branch, product):
     assert resumed.status_code == 200
     assert resumed.json()["status"] == "completed"
 
+    SaleService.set_void_passcode(branch, "2468")
+    blocked = api_client.post(
+        f"/api/v1/sales/{resumed.json()['id']}/void",
+        json={"reason": "test", "passcode": "0000"},
+        headers=headers,
+    )
+    assert blocked.status_code == 400
+
     voided = api_client.post(
         f"/api/v1/sales/{resumed.json()['id']}/void",
-        json={"reason": "test"},
+        json={"reason": "test", "passcode": "2468"},
         headers=headers,
     )
     assert voided.status_code == 200

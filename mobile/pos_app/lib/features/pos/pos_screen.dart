@@ -94,7 +94,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       context.go('/shift');
       return;
     }
-    HapticFeedback.selectionClick();
+    HapticFeedback.mediumImpact();
     ref.read(cartProvider.notifier).add(product);
   }
 
@@ -104,6 +104,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final shiftId = ref.watch(sessionProvider).shiftId;
     final items = cart.fold<int>(0, (sum, line) => sum + line.qty);
     final total = cart.fold<double>(0, (sum, line) => sum + asMoney(line.price) * line.qty);
+    final qtyById = {for (final line in cart) line.id: line.qty};
     final columns = MediaQuery.sizeOf(context).width >= 900 ? 4 : MediaQuery.sizeOf(context).width >= 600 ? 3 : 2;
 
     return Scaffold(
@@ -188,46 +189,32 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             final product = Map<String, dynamic>.from(_products[index] as Map);
                             return _ProductCard(
                               product: product,
+                              qty: qtyById[product['id']] ?? 0,
                               onAdd: () => _add(product, shiftId),
                             );
                           },
                         ),
                       ),
           ),
-          if (cart.isNotEmpty)
-            SafeArea(
-              top: false,
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Material(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(16),
-                  child: InkWell(
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return SlideTransition(
+                position: Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+            child: cart.isEmpty
+                ? const SizedBox.shrink(key: ValueKey('cart-empty'))
+                : _CartDock(
+                    key: const ValueKey('cart-dock'),
+                    items: items,
+                    total: total,
                     onTap: () => context.push('/cart'),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                      child: Row(
-                        children: [
-                          Text(
-                            'Cart ($items ${items == 1 ? 'item' : 'items'})',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                          ),
-                          const Spacer(),
-                          Text(
-                            peso(total),
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.chevron_right, color: Colors.white),
-                        ],
-                      ),
-                    ),
                   ),
-                ),
-              ),
-            ),
+          ),
         ],
       ),
     );
@@ -251,70 +238,283 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   }
 }
 
-class _ProductCard extends StatelessWidget {
-  const _ProductCard({required this.product, required this.onAdd});
+class _ProductCard extends StatefulWidget {
+  const _ProductCard({required this.product, required this.onAdd, this.qty = 0});
 
   final Map<String, dynamic> product;
   final VoidCallback onAdd;
+  final int qty;
+
+  @override
+  State<_ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<_ProductCard> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+  bool _justAdded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 240));
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1, end: 0.9).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.9, end: 1.04).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.04, end: 1).chain(CurveTween(curve: Curves.easeOutBack)), weight: 30),
+    ]).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleAdd() async {
+    widget.onAdd();
+    setState(() => _justAdded = true);
+    await _controller.forward(from: 0);
+    if (!mounted) return;
+    await Future<void>.delayed(const Duration(milliseconds: 320));
+    if (mounted) setState(() => _justAdded = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return PosCard(
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ProductThumb(
-                    name: product['name'] as String,
-                    imageUrl: product['image_url'] as String?,
-                    seed: product['id'] as int,
-                    expand: true,
-                    radius: 12,
-                  ),
-                ),
-                Positioned(
-                  right: 6,
-                  bottom: 6,
-                  child: Material(
-                    color: accent,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: onAdd,
-                      child: const SizedBox(
-                        width: 32,
-                        height: 32,
-                        child: Icon(Icons.add, color: Colors.white, size: 20),
+    final inCart = widget.qty > 0;
+    return ScaleTransition(
+      scale: _scale,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _justAdded
+              ? const [BoxShadow(color: Color(0x4D1E8A3C), blurRadius: 16, offset: Offset(0, 6))]
+              : const [],
+        ),
+        child: PosCard(
+          padding: EdgeInsets.zero,
+          color: _justAdded ? accentSoft : Colors.white,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _handleAdd,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: ProductThumb(
+                              name: widget.product['name'] as String,
+                              imageUrl: widget.product['image_url'] as String?,
+                              seed: widget.product['id'] as int,
+                              expand: true,
+                              radius: 12,
+                            ),
+                          ),
+                          AnimatedOpacity(
+                            opacity: _justAdded ? 1 : 0,
+                            duration: const Duration(milliseconds: 140),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.42),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.check_rounded, color: Colors.white, size: 42),
+                              ),
+                            ),
+                          ),
+                          if (inCart && !_justAdded)
+                            Positioned(
+                              left: 6,
+                              top: 6,
+                              child: _QtyBadge(qty: widget.qty),
+                            ),
+                          Positioned(
+                            right: 6,
+                            bottom: 6,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: _justAdded || inCart ? const Color(0xFF166534) : accent,
+                                shape: BoxShape.circle,
+                                boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))],
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 160),
+                                child: Icon(
+                                  _justAdded ? Icons.check_rounded : Icons.add,
+                                  key: ValueKey(_justAdded),
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.product['name'] as String,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800, height: 1.2, color: ink),
+                          ),
+                          const Spacer(),
+                          MoneyText(widget.product['selling_price'], size: 15, color: accent),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product['name'] as String,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800, height: 1.2, color: ink),
+        ),
+      ),
+    );
+  }
+}
+
+class _QtyBadge extends StatelessWidget {
+  const _QtyBadge({required this.qty});
+
+  final int qty;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 160),
+      transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+      child: Container(
+        key: ValueKey(qty),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: accent,
+          borderRadius: BorderRadius.circular(99),
+        ),
+        child: Text(
+          '×$qty',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+        ),
+      ),
+    );
+  }
+}
+
+class _CartDock extends StatefulWidget {
+  const _CartDock({super.key, required this.items, required this.total, required this.onTap});
+
+  final int items;
+  final double total;
+  final VoidCallback onTap;
+
+  @override
+  State<_CartDock> createState() => _CartDockState();
+}
+
+class _CartDockState extends State<_CartDock> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1, end: 1.045).chain(CurveTween(curve: Curves.easeOut)), weight: 50),
+      TweenSequenceItem(tween: Tween<double>(begin: 1.045, end: 1).chain(CurveTween(curve: Curves.easeOutBack)), weight: 50),
+    ]).animate(_pulse);
+    _pulse.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartDock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.items != widget.items || oldWidget.total != widget.total) {
+      _pulse.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: ScaleTransition(
+          scale: _scale,
+          child: Material(
+            color: accent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                child: Row(
+                  children: [
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                      child: Container(
+                        key: ValueKey(widget.items),
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: Text(
+                          '${widget.items}',
+                          style: const TextStyle(color: accent, fontWeight: FontWeight.w800, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.items == 1 ? '1 item in cart' : '${widget.items} items in cart',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: Text(
+                        peso(widget.total),
+                        key: ValueKey(widget.total),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right, color: Colors.white),
+                  ],
                 ),
-                const Spacer(),
-                MoneyText(product['selling_price'], size: 15, color: accent),
-              ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

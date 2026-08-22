@@ -6,6 +6,7 @@ import '../../app/theme.dart';
 import '../../core/auth/session.dart';
 import '../../core/customers/selected_customer.dart';
 import '../../core/network/api_client.dart';
+import '../../core/printing/printer_service.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
 import '../customers/customer_picker.dart';
@@ -24,6 +25,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   Map<String, dynamic>? _quote;
   String? _error;
   bool _busy = false;
+  String _busyLabel = 'Posting…';
 
   static const _methods = [
     ('cash', 'Cash', Icons.payments_outlined),
@@ -37,6 +39,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
   void initState() {
     super.initState();
     _refreshQuote();
+    Future.microtask(() => ref.read(printerProvider.notifier).refresh());
   }
 
   @override
@@ -67,6 +70,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
     setState(() {
       _busy = true;
+      _busyLabel = 'Posting…';
       _error = null;
     });
     try {
@@ -85,13 +89,30 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               customerId: ref.read(selectedCustomerProvider)?.id,
             )
           : await api.resumeSale(cart.heldSaleId!, payments);
+      final saleId = int.parse('${sale['id']}');
       clearTicket(ref);
-      if (mounted) context.go('/receipt/${sale['id']}');
+      if (mounted) setState(() => _busyLabel = 'Printing…');
+      await _printSale(saleId);
+      if (mounted) context.go('/receipt/$saleId');
     } catch (_) {
       setState(() => _error = 'Saved locally if offline. Open More to sync.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _printSale(int saleId) async {
+    try {
+      await ref.read(printerProvider.notifier).refresh();
+      if (!ref.read(printerProvider).hasSaved) return;
+      final receipt = await ref.read(apiProvider).receipt(saleId);
+      final text = receipt['text']?.toString() ?? '';
+      if (text.trim().isEmpty) return;
+      await ref.read(printerProvider.notifier).printTicket(
+            text,
+            qrData: '${receipt['qr_payload'] ?? receipt['receipt_number'] ?? ''}',
+          );
+    } catch (_) {}
   }
 
   @override
@@ -169,7 +190,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
           const SizedBox(height: 20),
           FilledButton(
             onPressed: _busy ? null : _complete,
-            child: Text(_busy ? 'Posting…' : 'Complete sale'),
+            child: Text(_busy ? _busyLabel : 'Complete sale'),
           ),
         ],
       ),

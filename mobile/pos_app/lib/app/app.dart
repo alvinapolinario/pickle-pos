@@ -48,7 +48,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/pay', builder: (_, __) => const PaymentScreen()),
       GoRoute(
         path: '/receipt/:id',
-        builder: (_, state) => ReceiptScreen(saleId: int.parse(state.pathParameters['id']!)),
+        builder: (_, state) => ReceiptScreen(
+          saleId: int.parse(state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/refund/:id',

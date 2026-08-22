@@ -25,6 +25,57 @@
     </div>
 </article>
 <article class="card module-card" style="margin-top: 16px;">
+    <h2 style="margin: 0 0 8px; font-size: 16px;">Receipt header</h2>
+    <p style="margin: 0 0 16px; color: #6b7c90;">Store name and address print at the top of POS and console receipts. Leave a field blank to fall back to the branch name or street address.</p>
+    <form method="post">
+        {% csrf_token %}
+        {% for branch in branches %}
+        <div style="{% if not forloop.first %}margin-top: 20px; padding-top: 16px; border-top: 1px solid #e4ebe6;{% endif %}">
+            <p style="margin: 0 0 12px; font-weight: 700;">{{ branch.name }} <span style="color: #6b7c90; font-weight: 600;">· {{ branch.code }}</span></p>
+            <label class="field" for="receipt_store_name_{{ branch.id }}">
+                <span>Store name</span>
+                <input class="field-input" id="receipt_store_name_{{ branch.id }}" name="receipt_store_name_{{ branch.id }}" value="{{ branch.receipt_store_name }}" placeholder="{{ branch.name }}">
+            </label>
+            <label class="field" for="receipt_address_{{ branch.id }}">
+                <span>Address</span>
+                <textarea class="field-input" id="receipt_address_{{ branch.id }}" name="receipt_address_{{ branch.id }}" rows="3" placeholder="Street, city, province">{{ branch.receipt_address }}</textarea>
+            </label>
+        </div>
+        {% empty %}
+        <p style="margin: 0; color: #6b7c90;">No branches configured.</p>
+        {% endfor %}
+        {% if branches %}
+        <div style="padding-top: 8px;">
+            <button class="btn-primary" type="submit" name="intent" value="receipt">Save receipt header</button>
+        </div>
+        {% endif %}
+    </form>
+</article>
+<article class="card module-card" style="margin-top: 16px;">
+    <h2 style="margin: 0 0 8px; font-size: 16px;">Void / refund passcode</h2>
+    <p style="margin: 0 0 16px; color: #6b7c90;">Cashiers must enter this same code on the tablet to void or refund a sale. The code is stored hashed and is never sent to the POS app.</p>
+    <form method="post">
+        {% csrf_token %}
+        {% for branch in branches %}
+        <div style="{% if not forloop.first %}margin-top: 20px; padding-top: 16px; border-top: 1px solid #e4ebe6;{% endif %}">
+            <p style="margin: 0 0 12px; font-weight: 700;">{{ branch.name }} <span style="color: #6b7c90; font-weight: 600;">· {{ branch.code }}</span></p>
+            <p style="margin: 0 0 10px; color: #6b7c90; font-size: 13px;">{% if branch.void_passcode_set %}Passcode is set.{% else %}No passcode yet — voids and refunds from the tablet will be blocked.{% endif %}</p>
+            <label class="field" for="void_passcode_{{ branch.id }}">
+                <span>{% if branch.void_passcode_set %}New passcode{% else %}Passcode{% endif %}</span>
+                <input class="field-input" id="void_passcode_{{ branch.id }}" name="void_passcode_{{ branch.id }}" type="password" autocomplete="new-password" placeholder="{% if branch.void_passcode_set %}Leave blank to keep the current code{% else %}At least 4 characters{% endif %}">
+            </label>
+        </div>
+        {% empty %}
+        <p style="margin: 0; color: #6b7c90;">No branches configured.</p>
+        {% endfor %}
+        {% if branches %}
+        <div style="padding-top: 8px;">
+            <button class="btn-primary" type="submit" name="intent" value="void_passcode">Save void passcode</button>
+        </div>
+        {% endif %}
+    </form>
+</article>
+<article class="card module-card" style="margin-top: 16px;">
     <p style="margin: 0 0 16px; color: #6b7c90;">Turn VAT off for courts or canteens that are not VAT-registered. Selling prices stay the same; the register just stops extracting 12% tax.</p>
     <form method="post">
         {% csrf_token %}
@@ -62,7 +113,7 @@
         </table>
         {% if branches %}
         <div style="padding-top: 16px;">
-            <button class="btn-primary" type="submit">Save tax settings</button>
+            <button class="btn-primary" type="submit" name="intent" value="tax">Save tax settings</button>
         </div>
         {% endif %}
     </form>

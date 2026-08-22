@@ -43,6 +43,37 @@ def test_receipt_includes_totals_and_branch(branch, user):
     assert branch.name in receipt.text
     assert sale.receipt_number in receipt.text
     assert "VAT" in receipt.text
+    assert "PICKLEBALL POS" not in receipt.text
+
+
+@pytest.mark.django_db
+def test_receipt_uses_store_name_and_address_from_settings(branch, user):
+    branch.receipt_store_name = "Pickleball West"
+    branch.receipt_address = "123 Court Lane, Pasig City"
+    branch.save(update_fields=["receipt_store_name", "receipt_address"])
+    category = Category.objects.create(branch=branch, name="Drinks")
+    product = Product.objects.create(
+        branch=branch,
+        category=category,
+        sku="BEV-CUSTOM",
+        name="Water",
+        selling_price=Decimal("25.00"),
+        unit=ProductUnit.BOTTLE,
+        track_inventory=False,
+    )
+    shift = ShiftService().open_shift(cashier_id=user.id, branch_id=branch.id, opening_cash=Decimal("50"))
+    sale = SaleService().create_sale(
+        shift_id=shift.id,
+        cashier_id=user.id,
+        lines=[SaleLineInput(product.id, Decimal("1"))],
+        payments=[PaymentInput("cash", Decimal("25.00"))],
+    )
+    receipt = ReceiptService().build(sale)
+    assert receipt.branch_name == "Pickleball West"
+    assert receipt.branch_address == "123 Court Lane, Pasig City"
+    assert "Pickleball West" in receipt.text
+    assert "123 Court Lane" in receipt.text
+    assert "Main Branch" not in receipt.text
 
 
 @pytest.mark.django_db

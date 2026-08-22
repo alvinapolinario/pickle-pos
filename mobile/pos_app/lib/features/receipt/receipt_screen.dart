@@ -7,6 +7,7 @@ import '../../app/theme.dart';
 import '../../core/network/api_client.dart';
 import '../../core/printing/printer_service.dart';
 import '../../ui/widgets.dart';
+import '../sales/void_dialog.dart';
 
 class ReceiptScreen extends ConsumerStatefulWidget {
   const ReceiptScreen({super.key, required this.saleId});
@@ -37,9 +38,9 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
       }
       return;
     }
-    final printer = ref.read(printerProvider);
-    if (!printer.hasSaved) {
-      if (!mounted) return;
+    await ref.read(printerProvider.notifier).refresh();
+    if (!mounted) return;
+    if (!ref.read(printerProvider).hasSaved) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Choose a Bluetooth printer first.')),
       );
@@ -47,7 +48,10 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
       return;
     }
     setState(() => _printing = true);
-    final ok = await ref.read(printerProvider.notifier).printTicket(text);
+    final ok = await ref.read(printerProvider.notifier).printTicket(
+          text,
+          qrData: '${_receipt?['qr_payload'] ?? _receipt?['receipt_number'] ?? ''}',
+        );
     if (!mounted) return;
     setState(() => _printing = false);
     final message = ref.read(printerProvider).message ?? (ok ? 'Sent to printer.' : 'Print failed.');
@@ -65,9 +69,10 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
   Future<void> _load() async {
     try {
       final receipt = await ref.read(apiProvider).receipt(widget.saleId);
+      if (!mounted) return;
       setState(() => _receipt = receipt);
     } catch (_) {
-      setState(() => _error = 'Could not load receipt.');
+      if (mounted) setState(() => _error = 'Could not load receipt.');
     }
   }
 
@@ -93,7 +98,19 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text('Sale completed!', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24, color: ink)),
+                Text(
+                  '${receipt['branch_name'] ?? ''}'.trim().isEmpty ? 'Sale completed!' : '${receipt['branch_name']}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 24, color: ink),
+                ),
+                if ('${receipt['branch_address'] ?? ''}'.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${receipt['branch_address']}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: muted, fontWeight: FontWeight.w600),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   '${receipt['receipt_number']} · ${receipt['sold_at']}',
@@ -167,6 +184,24 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
                     ),
                   ],
                 ),
+                if ('${receipt['status']}' == 'completed') ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _printing
+                        ? null
+                        : () async {
+                            final voided = await confirmVoidSale(context, ref, saleId: widget.saleId);
+                            if (voided) await _load();
+                          },
+                    icon: const Icon(Icons.block, color: red),
+                    label: const Text('Void receipt'),
+                    style: OutlinedButton.styleFrom(foregroundColor: red),
+                  ),
+                ],
+                if ('${receipt['status']}' == 'void') ...[
+                  const SizedBox(height: 10),
+                  const SoftBanner(message: 'This receipt has been voided.', tone: StatusTone.bad, margin: EdgeInsets.zero),
+                ],
                 const SizedBox(height: 10),
                 FilledButton(
                   onPressed: () => context.go('/pos'),

@@ -9,6 +9,7 @@ class BranchSettingsResponse(BaseModel):
     vat_registered: bool
     tax_rate: Decimal
     memberships_enabled: bool = True
+    void_passcode_set: bool = False
 
 
 class BranchSettingsUpdate(BaseModel):

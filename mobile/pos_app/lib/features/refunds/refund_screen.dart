@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../core/auth/session.dart';
 import '../../core/network/api_client.dart';
 import '../../ui/format.dart';
 import '../../ui/widgets.dart';
+import '../sales/void_dialog.dart';
 
 class RefundScreen extends ConsumerStatefulWidget {
   const RefundScreen({super.key, required this.saleId});
@@ -71,6 +73,14 @@ class _RefundScreenState extends ConsumerState<RefundScreen> {
       setState(() => _error = 'Choose at least one item to refund.');
       return;
     }
+    final unlocked = await askManagerPasscode(
+      context,
+      title: 'Refund sale',
+      subtitle: 'Enter the same passcode used for voids. It is set in System Settings.',
+      actionLabel: 'Authorize refund',
+      askReason: false,
+    );
+    if (unlocked == null) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -82,13 +92,22 @@ class _RefundScreenState extends ConsumerState<RefundScreen> {
             lines: lines,
             method: _method,
             reason: _reason.text.trim(),
+            passcode: unlocked.passcode,
           );
       if (mounted) context.go('/tickets');
-    } catch (_) {
-      setState(() => _error = 'Refund failed. Check remaining quantities and shift.');
+    } catch (error) {
+      setState(() => _error = _refundMessage(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  String _refundMessage(Object error) {
+    if (error is DioException) {
+      final detail = error.response?.data;
+      if (detail is Map && detail['detail'] != null) return '${detail['detail']}';
+    }
+    return 'Refund failed. Check remaining quantities, shift, and passcode.';
   }
 
   @override

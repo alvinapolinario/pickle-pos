@@ -241,6 +241,7 @@ def get_receipt(
         transaction_number=receipt.transaction_number,
         receipt_number=receipt.receipt_number,
         branch_name=receipt.branch_name,
+        branch_address=receipt.branch_address,
         cashier=receipt.cashier,
         customer=receipt.customer,
         sold_at=receipt.sold_at,
@@ -248,7 +249,9 @@ def get_receipt(
         tax_amount=receipt.tax_amount,
         change_amount=receipt.change_amount,
         vat_registered=receipt.vat_registered,
+        status=receipt.status,
         text=receipt.text,
+        qr_payload=receipt.receipt_number,
         lines=[
             {
                 "quantity": line.quantity,
@@ -269,6 +272,14 @@ def void_sale(
 ):
     enforce_any_permission(current_user, "sales.void", "sales.create")
     try:
+        sale = (
+            Sale.objects.select_related("branch")
+            .filter(pk=sale_id)
+            .first()
+        )
+        if sale is None or (current_user.branch_id and sale.branch_id != current_user.branch_id):
+            raise_domain(NotFoundError("Sale not found."))
+        SaleService.verify_void_passcode(sale.branch, payload.passcode)
         sale = SaleService().void_sale(
             sale_id=sale_id,
             cashier_id=current_user.user_id,
@@ -287,6 +298,14 @@ def refund_sale(
 ):
     enforce_permission(current_user, "sales.refund")
     try:
+        sale = (
+            Sale.objects.select_related("branch")
+            .filter(pk=sale_id)
+            .first()
+        )
+        if sale is None or (current_user.branch_id and sale.branch_id != current_user.branch_id):
+            raise_domain(NotFoundError("Sale not found."))
+        SaleService.verify_void_passcode(sale.branch, payload.passcode)
         refund = SaleService().refund_sale(
             sale_id=sale_id,
             shift_id=payload.shift_id,

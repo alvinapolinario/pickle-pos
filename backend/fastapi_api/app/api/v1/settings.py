@@ -25,6 +25,7 @@ def _response(branch: Branch) -> BranchSettingsResponse:
         vat_registered=branch.vat_registered,
         tax_rate=branch.tax_rate,
         memberships_enabled=branch.memberships_enabled,
+        void_passcode_set=bool(branch.void_passcode_hash),
     )
 
 

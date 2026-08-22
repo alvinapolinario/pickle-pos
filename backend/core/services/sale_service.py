@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID, uuid4
 
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
 from django.utils import timezone
 
@@ -219,6 +220,21 @@ class SaleService:
                     notes=sale.transaction_number,
                 )
             return sale
+
+    @staticmethod
+    def set_void_passcode(branch, passcode: str) -> None:
+        raw = (passcode or "").strip()
+        if len(raw) < 4:
+            raise DomainError("Void passcode must be at least 4 characters.")
+        branch.void_passcode_hash = make_password(raw)
+        branch.save(update_fields=["void_passcode_hash", "updated_at"])
+
+    @staticmethod
+    def verify_void_passcode(branch, passcode: str) -> None:
+        if not getattr(branch, "void_passcode_hash", ""):
+            raise DomainError("Void passcode is not set in System Settings.")
+        if not passcode or not check_password(passcode, branch.void_passcode_hash):
+            raise DomainError("Invalid void passcode.")
 
     def void_sale(self, *, sale_id: int, cashier_id: int, reason: str = ""):
         from apps.sales.models import Sale

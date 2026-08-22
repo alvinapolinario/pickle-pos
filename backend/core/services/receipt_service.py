@@ -60,6 +60,25 @@ def _row(left: str, right: str, width: int = WIDTH) -> str:
     return f"{left}{' ' * space}{right}"
 
 
+def _wrap(text: str, width: int = WIDTH) -> list[str]:
+    words = text.split()
+    if not words:
+        return []
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if len(candidate) <= width:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+        current = word if len(word) <= width else word[:width]
+    if current:
+        lines.append(current)
+    return lines
+
+
 class ReceiptService:
     def build(self, sale) -> Receipt:
         branch = sale.branch
@@ -73,8 +92,8 @@ class ReceiptService:
         sold_at = sale.created_at.astimezone().strftime("%Y-%m-%d %H:%M")
         vat_registered = bool(getattr(branch, "vat_registered", True))
         receipt = Receipt(
-            branch_name=branch.name,
-            branch_address=" ".join(part for part in [branch.address, branch.city] if part),
+            branch_name=branch.printed_store_name,
+            branch_address=branch.printed_address,
             branch_phone=branch.phone,
             transaction_number=sale.transaction_number,
             receipt_number=sale.receipt_number or sale.transaction_number,
@@ -96,12 +115,9 @@ class ReceiptService:
         return Receipt(**{**receipt.__dict__, "text": self.render_text(receipt)})
 
     def render_text(self, receipt: Receipt) -> str:
-        parts = [
-            receipt.branch_name.center(WIDTH),
-            "PICKLEBALL POS".center(WIDTH),
-        ]
+        parts = [line.center(WIDTH) for line in _wrap(receipt.branch_name)]
         if receipt.branch_address:
-            parts.append(receipt.branch_address[:WIDTH].center(WIDTH))
+            parts.extend(line.center(WIDTH) for line in _wrap(receipt.branch_address))
         if receipt.branch_phone:
             parts.append(receipt.branch_phone.center(WIDTH))
         parts.extend(
@@ -131,8 +147,9 @@ class ReceiptService:
             parts.append(_row(label, _money(payment.amount)))
         if receipt.change_amount:
             parts.append(_row("CHANGE", _money(receipt.change_amount)))
-        footer = "Thank you. Prices include VAT." if receipt.vat_registered else "Thank you."
-        parts.extend(["-" * WIDTH, footer.center(WIDTH)])
+        parts.append("-" * WIDTH)
+        if receipt.vat_registered:
+            parts.append("Prices include VAT.".center(WIDTH))
         if receipt.status != "completed":
             parts.append(receipt.status.upper().center(WIDTH))
         return "\n".join(parts)

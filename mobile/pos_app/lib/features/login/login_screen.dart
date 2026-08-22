@@ -119,8 +119,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       constraints: const BoxConstraints(maxWidth: 420),
                       child: Column(
                         children: [
-                          const BrandMark(size: 96),
-                          const SizedBox(height: 16),
+                          const BrandMark(size: 180),
+                          const SizedBox(height: 20),
                           const Text(
                             'PICKLEBALL POS',
                             style: TextStyle(

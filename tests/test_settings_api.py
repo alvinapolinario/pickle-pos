@@ -16,6 +16,7 @@ def test_vat_setting_defaults_on_and_can_be_turned_off(api_client, user, branch)
     assert current.status_code == 200
     assert current.json()["vat_registered"] is True
     assert current.json()["branch_id"] == branch.id
+    assert current.json()["void_passcode_set"] is False
 
     updated = api_client.patch("/api/v1/settings", json={"vat_registered": False}, headers=headers)
     assert updated.status_code == 200
