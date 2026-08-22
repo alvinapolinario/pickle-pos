@@ -1,0 +1,120 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-pickle_pos}
+      POSTGRES_USER: ${POSTGRES_USER:-pickle_pos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pickle_pos} -d ${POSTGRES_DB:-pickle_pos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  django:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+      sh -c "python django_admin/manage.py migrate --noinput &&
+             python django_admin/manage.py collectstatic --noinput &&
+             gunicorn --chdir django_admin config.wsgi:application --bind 0.0.0.0:7100 --workers 3 --timeout 60"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      RATE_LIMIT_ENABLED: "true"
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:7100/health/')\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: >
+      gunicorn fastapi_api.main:app
+      --worker-class uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:7101
+      --workers 2
+      --timeout 60
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      RATE_LIMIT_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      django:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:7101/health')\""]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: celery -A workers.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: celery -A workers.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DJANGO_SETTINGS_MODULE: config.settings.production
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - django
+      - fastapi
+
+volumes:
+  postgres_data:

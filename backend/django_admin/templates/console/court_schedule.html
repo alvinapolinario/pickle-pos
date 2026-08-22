@@ -1,0 +1,48 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="date" name="date" value="{{ on_date }}">
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+</div>
+
+<article class="card module-card">
+    {% if rows %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Court</th>
+                {% for hour in hours %}
+                <th>{{ hour|stringformat:"02d" }}:00</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td class="row-title">{{ row.court.name }}</td>
+                {% for slot in row.slots %}
+                <td>
+                    {% if slot.booking %}
+                    <span class="status">{{ slot.booking.booking_number }}</span>
+                    {% elif row.court.status == "maintenance" %}
+                    <span class="status status-muted">—</span>
+                    {% else %}
+                    <span class="row-sub">open</span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No courts to schedule</h3>
+        <p>Add courts first, then this grid shows hourly occupancy.</p>
+    </div>
+    {% endif %}
+</article>
+{% endblock %}

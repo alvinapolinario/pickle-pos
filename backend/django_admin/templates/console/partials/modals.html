@@ -1,0 +1,20 @@
+{% load console_icons %}
+<div class="modal-overlay" data-form-modal hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="form-modal-title">
+        <div class="modal-head">
+            <h2 id="form-modal-title">{{ page_title }}</h2>
+            <button class="icon-action" type="button" data-modal-close aria-label="Close">{% icon "x" 18 %}</button>
+        </div>
+        <div class="modal-body" data-form-modal-body></div>
+    </div>
+</div>
+
+<div class="modal-overlay" data-view-modal hidden>
+    <div class="modal {% if not view_wide %}modal-sm{% endif %}" role="dialog" aria-modal="true" aria-labelledby="view-modal-title">
+        <div class="modal-head">
+            <h2 id="view-modal-title">Details</h2>
+            <button class="icon-action" type="button" data-modal-close aria-label="Close">{% icon "x" 18 %}</button>
+        </div>
+        <div class="modal-body" data-view-modal-body></div>
+    </div>
+</div>

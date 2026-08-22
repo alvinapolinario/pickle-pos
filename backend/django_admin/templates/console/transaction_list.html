@@ -1,0 +1,76 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search transaction or receipt">
+        <select class="field-input" name="status">
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All</option>
+            <option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="held" {% if status == 'held' %}selected{% endif %}>Held</option>
+            <option value="void" {% if status == 'void' %}selected{% endif %}>Void</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+</div>
+
+<article class="card module-card">
+    {% if sales %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Transaction</th>
+                <th>Receipt</th>
+                <th>Cashier</th>
+                <th>Net</th>
+                <th>Paid</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>
+                    <div class="row-title mono">{{ sale.transaction_number }}</div>
+                    <div class="row-sub">{{ sale.created_at|date:"M j, g:i A" }}</div>
+                </td>
+                <td class="mono">{{ sale.receipt_number|default:"—" }}</td>
+                <td>{{ sale.cashier }}</td>
+                <td>₱ {{ sale.net_amount|floatformat:2 }}</td>
+                <td>{{ sale.get_payment_status_display }}</td>
+                <td>
+                    {% if sale.status == 'completed' %}<span class="status">COMPLETED</span>
+                    {% elif sale.status == 'held' %}<span class="status status-warn">HELD</span>
+                    {% else %}<span class="status status-muted">VOID</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view="{% url 'sales:sale_detail' sale.pk %}" data-modal-title="{{ sale.transaction_number }}" aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                        <button class="icon-action" type="button" data-open-view="{% url 'sales:sale_receipt' sale.pk %}" data-modal-title="Receipt {{ sale.receipt_number|default:sale.transaction_number }}" aria-label="Receipt" title="Reprint">{% icon "printer" 16 %}</button>
+                        {% if sale.status == 'completed' %}
+                        <button class="icon-action" type="button" data-open-form="{% url 'sales:sale_refund' sale.pk %}" data-modal-title="Refund {{ sale.transaction_number }}" aria-label="Refund" title="Refund">{% icon "undo-2" 16 %}</button>
+                        {% endif %}
+                        {% if sale.status != 'void' %}
+                        <form method="post" action="{% url 'sales:sale_void' sale.pk %}" data-confirm="Void {{ sale.transaction_number }}? Stock will be returned if this sale was completed.">
+                            {% csrf_token %}
+                            <button class="icon-action icon-action-danger" type="submit" aria-label="Void" title="Void">{% icon "ban" 16 %}</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No transactions</h3>
+        <p>Completed, held, and voided tickets appear here.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" with view_wide=True %}
+{% endblock %}

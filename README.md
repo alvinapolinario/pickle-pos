@@ -38,9 +38,9 @@ Services:
 
 | Service | URL |
 |---------|-----|
-| Django Admin | http://localhost:8000/admin/ |
-| Dashboard | http://localhost:8000/ |
-| FastAPI Docs | http://localhost:8001/api/docs |
+| Django Admin | http://localhost:7100/ |
+| Built-in Django Admin | http://localhost:7100/django-admin/ |
+| FastAPI Docs | http://localhost:7101/api/docs |
 | Nginx (combined) | http://localhost/ |
 
 ## Local Development (without Docker)
@@ -59,12 +59,14 @@ pip install -e ".[dev]"
 cd django_admin
 python manage.py migrate
 python manage.py seed_rbac
+python manage.py seed_courts
+python manage.py seed_expenses
 python manage.py createsuperuser
-python manage.py runserver
+python manage.py runserver 7100
 
 # Separate terminal — FastAPI
 cd backend
-uvicorn fastapi_api.main:app --reload --port 8001
+uvicorn fastapi_api.main:app --reload --port 7101
 ```
 
 ## Running Tests
@@ -83,7 +85,35 @@ pytest ../tests -v
 | [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | PostgreSQL schema design |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | **Progress tracker & phase checklist** |
 
-## Phase 1 Deliverables (Current)
+## Phase 4 — Android POS (Flutter)
+
+The cashier app lives in `mobile/pos_app/`.
+
+```bash
+cd mobile/pos_app
+flutter pub get
+flutter run
+```
+
+Use `http://10.0.2.2:7101` from the Android emulator (host FastAPI).
+
+## Production
+
+Use real secrets in `.env` (never the `change-me` placeholders). Then:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+That overlay runs Gunicorn (Django + FastAPI workers), enables login lockout and API rate limits, and refuses default secrets. Daily database backups:
+
+```bash
+./scripts/backup_postgres.sh
+```
+
+Behind TLS, set `SECURE_SSL_REDIRECT=true` and `SECURE_HSTS_SECONDS=31536000`.
+
+## Phase 1–3 Deliverables
 
 - [x] Monorepo structure
 - [x] Docker Compose (PostgreSQL, Redis, Django, FastAPI, Celery, Nginx)
@@ -94,14 +124,13 @@ pytest ../tests -v
 - [x] JWT auth API (login, refresh, logout, me)
 - [x] RBAC seed command
 - [x] Foundation tests
-
-## Next Steps (Phase 2)
-
-See the full checklist in [docs/PROGRESS.md](docs/PROGRESS.md).
-
-- Products and categories
-- Inventory movement ledger
-- Suppliers and purchasing
+- [x] Products, categories, and branch price overrides
+- [x] Inventory movement ledger
+- [x] Suppliers and purchasing
+- [x] Server-side pricing (VAT-inclusive)
+- [x] Cashier shifts and POS sales (stock deduction, void, refund, hold)
+- [x] Optional customers, receipts, device API, and offline sync
+- [x] Flutter POS app (`mobile/pos_app`)
 
 ## License
 

@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
-from apps.accounts.models import Role
+from apps.accounts.models import Permission, Role
 from apps.branches.models import Branch
 from core.services.auth_service import AuthService
 
@@ -16,7 +16,17 @@ def branch(db):
 
 @pytest.fixture
 def cashier_role(db):
-    return Role.objects.create(code="cashier", name="Cashier")
+    role = Role.objects.create(code="cashier", name="Cashier")
+    codes = [
+        ("sales.create", "Create sales"),
+        ("sales.refund", "Process refunds"),
+    ]
+    permissions = [
+        Permission.objects.get_or_create(code=code, defaults={"name": name, "module": "sales"})[0]
+        for code, name in codes
+    ]
+    role.permissions.set(permissions)
+    return role
 
 
 @pytest.fixture

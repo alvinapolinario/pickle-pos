@@ -6,7 +6,7 @@ import environ
 
 from core.config.settings import get_settings
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 PROJECT_ROOT = BASE_DIR.parent
 
 env = environ.Env(
@@ -34,6 +34,16 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.branches",
     "apps.audit",
+    "apps.console",
+    "apps.products",
+    "apps.inventory",
+    "apps.purchasing",
+    "apps.shifts",
+    "apps.customers",
+    "apps.sales",
+    "apps.sync",
+    "apps.courts",
+    "apps.expenses",
 ]
 
 MIDDLEWARE = [
@@ -60,6 +70,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.console.context_processors.console_nav",
             ],
         },
     },
@@ -88,14 +99,20 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
-LOGOUT_REDIRECT_URL = "login"
+LOGIN_URL = "console:login"
+LOGIN_REDIRECT_URL = "console:dashboard"
+LOGOUT_REDIRECT_URL = "console:login"
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:7100",
+    "http://127.0.0.1:7100",
+    "http://localhost",
+]
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
@@ -113,5 +130,11 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "prune-audit-logs-daily": {
+        "task": "audit.prune_logs",
+        "schedule": 60 * 60 * 24,
+    },
+}
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

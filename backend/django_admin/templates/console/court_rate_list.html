@@ -1,0 +1,44 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <p class="row-sub">Weekday overrides replace the court’s default hourly rate.</p>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New weekday rate" data-modal-key="create">
+        {% icon "plus" 16 %}
+        Add rate
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if rates %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Court</th>
+                <th>Day</th>
+                <th>Hourly rate</th>
+                <th>Active</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rate in rates %}
+            <tr>
+                <td class="row-title">{{ rate.court.name }}</td>
+                <td>{{ rate.get_weekday_display }}</td>
+                <td>₱ {{ rate.hourly_rate }}</td>
+                <td>{% if rate.is_active %}Yes{% else %}No{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No weekday overrides</h3>
+        <p>Courts already have a default hourly rate. Add a Saturday or Sunday rate when peak pricing applies.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

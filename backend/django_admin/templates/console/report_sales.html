@@ -1,0 +1,130 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="date" name="from" value="{{ start }}">
+        <input class="field-input" type="date" name="to" value="{{ end }}">
+        <button class="btn-secondary" type="submit">Filter</button>
+        <a class="btn-secondary" href="?from={{ start }}&to={{ end }}&export=csv">Export CSV</a>
+    </form>
+</div>
+
+<section class="kpi-grid kpi-grid-4">
+    <article class="card kpi">
+        <p class="kpi-label">Net sales</p>
+        <div class="kpi-value">₱ {{ report.net|floatformat:2 }}</div>
+        <p class="kpi-period">{{ report.count }} tickets</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Gross</p>
+        <div class="kpi-value">₱ {{ report.gross|floatformat:2 }}</div>
+        <p class="kpi-period">Discounts ₱ {{ report.discount|floatformat:2 }}</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">VAT</p>
+        <div class="kpi-value">₱ {{ report.tax|floatformat:2 }}</div>
+        <p class="kpi-period">Extracted from selling prices</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">After refunds</p>
+        <div class="kpi-value">₱ {{ report.net_after_refunds|floatformat:2 }}</div>
+        <p class="kpi-period">Refunds ₱ {{ report.refunds|floatformat:2 }}</p>
+    </article>
+</section>
+
+<section class="report-grid">
+    <article class="card module-card">
+        <div class="card-head"><h3>By day</h3></div>
+        {% if report.days %}
+        <table class="data-table">
+            <thead><tr><th>Day</th><th>Tickets</th><th>Net</th></tr></thead>
+            <tbody>
+                {% for row in report.days %}
+                <tr>
+                    <td>{{ row.day|date:"M j, Y" }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No completed sales in this range.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>By payment method</h3></div>
+        {% if report.payments %}
+        <table class="data-table">
+            <thead><tr><th>Method</th><th>Count</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for row in report.payments %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No payments in this range.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Top products</h3></div>
+        {% if report.products %}
+        <table class="data-table">
+            <thead><tr><th>Product</th><th>Qty</th><th>Net</th></tr></thead>
+            <tbody>
+                {% for row in report.products %}
+                <tr>
+                    <td class="row-title">{{ row.name }} <span class="row-sub">{{ row.sku }}</span></td>
+                    <td>{{ row.qty }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No product lines in this range.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>By cashier</h3></div>
+        {% if report.cashiers %}
+        <table class="data-table">
+            <thead><tr><th>Cashier</th><th>Tickets</th><th>Net</th></tr></thead>
+            <tbody>
+                {% for row in report.cashiers %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No cashier totals in this range.</p>
+        {% endif %}
+    </article>
+</section>
+
+<article class="card module-card">
+    <div class="card-head"><h3>By hour</h3></div>
+    <table class="data-table">
+        <thead><tr><th>Hour</th><th>Tickets</th><th>Net</th></tr></thead>
+        <tbody>
+            {% for row in report.hours %}
+            <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.count }}</td>
+                <td>₱ {{ row.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

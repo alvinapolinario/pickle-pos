@@ -1,0 +1,84 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search PO or supplier">
+        <select class="field-input" name="status">
+            <option value="open" {% if status == 'open' %}selected{% endif %}>Open</option>
+            <option value="draft" {% if status == 'draft' %}selected{% endif %}>Draft</option>
+            <option value="ordered" {% if status == 'ordered' %}selected{% endif %}>Ordered</option>
+            <option value="partial" {% if status == 'partial' %}selected{% endif %}>Partial</option>
+            <option value="received" {% if status == 'received' %}selected{% endif %}>Received</option>
+            <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New purchase order" data-modal-key="create">
+        {% icon "plus" 16 %}
+        New PO
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if orders %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>PO</th>
+                <th>Supplier</th>
+                <th>Expected</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for po in orders %}
+            <tr data-view-title="{{ po.po_number }}">
+                <td><span class="mono">{{ po.po_number }}</span></td>
+                <td class="row-title">{{ po.supplier.name }}</td>
+                <td>{{ po.expected_date|date:"M j, Y"|default:"—" }}</td>
+                <td>₱ {{ po.ordered_total|default:0|floatformat:2 }}</td>
+                <td>
+                    {% if po.status == 'draft' %}<span class="status status-muted">DRAFT</span>
+                    {% elif po.status == 'partial' %}<span class="status status-warn">PARTIAL</span>
+                    {% elif po.status == 'cancelled' %}<span class="status status-muted">CANCELLED</span>
+                    {% else %}<span class="status">{{ po.get_status_display|upper }}</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view="{% url 'purchasing:purchase_order_detail' po.pk %}" data-modal-title="{{ po.po_number }}" aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                        {% if po.can_edit %}
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'purchasing:purchase_order_edit' po.pk %}" data-modal-title="Edit {{ po.po_number }}" aria-label="Edit" title="Edit">{% icon "pencil" 16 %}</button>
+                        {% endif %}
+                        {% if po.can_receive %}
+                        <button class="icon-action icon-action-success" type="button" data-open-form="{% url 'purchasing:purchase_order_receive' po.pk %}" data-modal-title="Receive {{ po.po_number }}" aria-label="Receive" title="Receive">{% icon "package-check" 16 %}</button>
+                        {% endif %}
+                        {% if po.received_qty %}
+                        <button class="icon-action" type="button" data-open-form="{% url 'purchasing:purchase_order_return' po.pk %}" data-modal-title="Return {{ po.po_number }}" aria-label="Return" title="Return to supplier">{% icon "undo-2" 16 %}</button>
+                        {% endif %}
+                        {% if po.can_cancel and not po.received_qty %}
+                        <form method="post" action="{% url 'purchasing:purchase_order_cancel' po.pk %}" data-confirm="Cancel {{ po.po_number }}?">
+                            {% csrf_token %}
+                            <button class="icon-action icon-action-danger" type="submit" aria-label="Cancel" title="Cancel">{% icon "ban" 16 %}</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No purchase orders</h3>
+        <p>Create a draft PO, add items, then submit it before receiving stock.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" with view_wide=True %}
+{% endblock %}

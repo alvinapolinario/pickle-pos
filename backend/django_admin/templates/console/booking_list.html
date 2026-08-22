@@ -1,0 +1,74 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="date" name="date" value="{{ on_date }}">
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New booking" data-modal-key="create">
+        {% icon "plus" 16 %}
+        New booking
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if bookings %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Booking</th>
+                <th>Court</th>
+                <th>When</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Pay</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td class="row-title">{{ booking.booking_number }}</td>
+                <td>{{ booking.court.name }}</td>
+                <td>{{ booking.start_at|date:"M j, g:i A" }} – {{ booking.end_at|date:"g:i A" }}</td>
+                <td>{{ booking.customer.name|default:"Walk-in" }}</td>
+                <td>₱ {{ booking.amount }}</td>
+                <td>
+                    {% if booking.payment_status == "refunded" %}<span class="status status-muted">REFUNDED</span>
+                    {% elif booking.payment_status == "paid" %}<span class="status">PAID</span>
+                    {% else %}<span class="status status-muted">UNPAID</span>{% endif %}
+                </td>
+                <td>
+                    {% if booking.status == "cancelled" %}<span class="status status-muted">CANCELLED</span>
+                    {% else %}<span class="status">{{ booking.status|upper }}</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        {% if booking.payment_status == "paid" %}
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'courts:booking_refund' booking.pk %}" data-modal-title="Refund {{ booking.booking_number }}" aria-label="Refund">{% icon "undo-2" 16 %}</button>
+                        {% endif %}
+                        {% if booking.status != "cancelled" %}
+                        <form method="post" action="{% url 'courts:booking_cancel' booking.pk %}" data-confirm="Cancel {{ booking.booking_number }} without refunding?">
+                            {% csrf_token %}
+                            <button class="icon-action icon-action-danger" type="submit" aria-label="Cancel">{% icon "ban" 16 %}</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No bookings on this day</h3>
+        <p>Walk-in court time can be booked here or from the POS Bookings tab.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<article class="card module-card">
+    <p style="margin: 0 0 16px; color: #6b7c90;">Turn VAT off for courts or canteens that are not VAT-registered. Selling prices stay the same; the register just stops extracting 12% tax.</p>
+    <form method="post">
+        {% csrf_token %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Branch</th>
+                    <th>Code</th>
+                    <th>VAT registered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for branch in branches %}
+                <tr>
+                    <td>{{ branch.name }}</td>
+                    <td>{{ branch.code }}</td>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="vat_{{ branch.id }}" value="1" {% if branch.vat_registered %}checked{% endif %}>
+                            Charge / show VAT
+                        </label>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3">No branches configured.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if branches %}
+        <div style="padding-top: 16px;">
+            <button class="btn-primary" type="submit">Save tax settings</button>
+        </div>
+        {% endif %}
+    </form>
+</article>
+{% endblock %}

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 
 
@@ -10,6 +12,8 @@ class Branch(models.Model):
     city = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=30, blank=True)
     timezone = models.CharField(max_length=50, default="Asia/Manila")
+    vat_registered = models.BooleanField(default=True)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=4, default=Decimal("0.1200"))
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

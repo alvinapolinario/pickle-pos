@@ -1,0 +1,74 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="date" name="from" value="{{ start }}">
+        <input class="field-input" type="date" name="to" value="{{ end }}">
+        <button class="btn-secondary" type="submit">Filter</button>
+        <a class="btn-secondary" href="?from={{ start }}&to={{ end }}&export=csv">Export CSV</a>
+    </form>
+</div>
+
+<section class="kpi-grid kpi-grid-4">
+    <article class="card kpi">
+        <p class="kpi-label">Court revenue</p>
+        <div class="kpi-value">₱ {{ report.revenue|floatformat:2 }}</div>
+        <p class="kpi-period">Paid bookings still on the books</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Bookings</p>
+        <div class="kpi-value">{{ report.bookings }}</div>
+        <p class="kpi-period">{{ report.cancelled }} cancelled</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Utilization</p>
+        <div class="kpi-value">{{ report.utilization }}%</div>
+        <p class="kpi-period">{{ report.hours }} of {{ report.capacity_hours }} hours</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Refunds</p>
+        <div class="kpi-value">₱ {{ report.refunds|floatformat:2 }}</div>
+        <p class="kpi-period">Cancel rate {{ report.cancellation_rate }}%</p>
+    </article>
+</section>
+
+<section class="report-grid">
+    <article class="card module-card">
+        <div class="card-head"><h3>By court</h3></div>
+        {% if report.courts %}
+        <table class="data-table">
+            <thead><tr><th>Court</th><th>Bookings</th><th>Cancelled</th><th>Hours</th><th>Revenue</th></tr></thead>
+            <tbody>
+                {% for row in report.courts %}
+                <tr>
+                    <td class="row-title">{{ row.name }}</td>
+                    <td>{{ row.bookings }}</td>
+                    <td>{{ row.cancelled }}</td>
+                    <td>{{ row.hours }}</td>
+                    <td>₱ {{ row.revenue|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No court bookings in this range.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Peak hours</h3></div>
+        <table class="data-table">
+            <thead><tr><th>Hour</th><th>Bookings</th><th>Revenue</th></tr></thead>
+            <tbody>
+                {% for row in report.hours_of_day %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+{% endblock %}

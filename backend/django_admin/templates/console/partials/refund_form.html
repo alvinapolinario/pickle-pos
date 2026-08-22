@@ -1,0 +1,40 @@
+{% load console_icons %}
+<form method="post" action="{{ action_url }}" class="catalog-form" data-modal-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+    {% if formset.non_form_errors %}{{ formset.non_form_errors }}{% endif %}
+    <p class="row-sub">{{ sale.transaction_number }} · net ₱ {{ sale.net_amount|floatformat:2 }}</p>
+    <div class="form-grid">
+        {% for field in form %}
+        <div class="field {% if field.name == 'reason' %}field-span{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {{ formset.management_form }}
+    <table class="line-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Available</th>
+                <th>Qty to refund</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in formset %}
+            <tr class="line-row">
+                {% for hidden in line.hidden_fields %}{{ hidden }}{% endfor %}
+                <td>{{ line.product_name|default:"Item" }}</td>
+                <td>{{ line.available|default:"—" }}</td>
+                <td>{{ line.quantity }}{% if line.quantity.errors %}<div class="field-error">{{ line.quantity.errors|striptags }}</div>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="form-actions">
+        <a class="btn-secondary" href="{{ list_url }}" data-modal-close>Cancel</a>
+        <button class="btn-primary btn-compact" type="submit">Post refund</button>
+    </div>
+</form>

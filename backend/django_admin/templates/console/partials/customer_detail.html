@@ -1,0 +1,16 @@
+<div class="detail-list">
+    <div class="detail-row"><span>Name</span><strong>{{ customer.name }}</strong></div>
+    <div class="detail-row"><span>Mobile</span><strong>{{ customer.mobile|default:"—" }}</strong></div>
+    <div class="detail-row"><span>Email</span><strong>{{ customer.email|default:"—" }}</strong></div>
+    <div class="detail-row"><span>Notes</span><strong>{{ customer.notes|default:"—" }}</strong></div>
+</div>
+<h3 class="detail-heading">Purchase history</h3>
+{% if sales %}
+<ul class="detail-notes">
+    {% for sale in sales %}
+    <li>{{ sale.created_at|date:"M j, Y g:i A" }} · {{ sale.transaction_number }} · ₱ {{ sale.net_amount|floatformat:2 }} · {{ sale.get_status_display }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="row-sub">No sales linked yet.</p>
+{% endif %}

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from core.domain.exceptions import AuthenticationError
+from core.domain.exceptions import AuthorizationError
 
 
 @dataclass(frozen=True)
@@ -26,4 +26,4 @@ def user_has_permission(user_permissions: frozenset[str], required: str) -> bool
 
 def require_permission(user_permissions: frozenset[str], required: str) -> None:
     if not user_has_permission(user_permissions, required):
-        raise AuthenticationError("Permission denied for this operation")
+        raise AuthorizationError("Permission denied for this operation")

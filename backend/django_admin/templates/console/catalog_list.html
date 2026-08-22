@@ -1,0 +1,149 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="{% if kind == 'products' %}Search name, SKU, barcode{% else %}Search category{% endif %}">
+        {% if kind == 'products' %}
+        <select class="field-input" name="category">
+            <option value="">All categories</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if category_id == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <select class="field-input" name="status">
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="{% if kind == 'products' %}New product{% else %}New category{% endif %}" data-modal-key="create">
+        {% icon "plus" 16 %}
+        {% if kind == 'products' %}Add product{% else %}Add category{% endif %}
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if kind == 'products' %}
+        {% if products %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Unit</th>
+                    <th>Tax</th>
+                    <th>Inventory</th>
+                    <th>Status</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr
+                    data-view-title="{{ product.name }}"
+                    data-view-sku="{{ product.sku }}"
+                    data-view-barcode="{{ product.barcode|default:'—' }}"
+                    data-view-category="{{ product.category.name }}"
+                    data-view-price="₱ {{ product.selling_price|floatformat:2 }}"
+                    data-view-cost="₱ {{ product.cost_price|floatformat:2 }}"
+                    data-view-unit="{{ product.get_unit_display }}"
+                    data-view-tax="{{ product.get_tax_status_display }}"
+                    data-view-inventory="{% if product.track_inventory %}Tracked · reorder {{ product.reorder_level }}{% else %}Not tracked{% endif %}"
+                    data-view-status="{% if product.is_active %}Active{% else %}Inactive{% endif %}"
+                >
+                    <td><span class="mono">{{ product.sku }}</span></td>
+                    <td>
+                        <div class="row-title">{{ product.name }}</div>
+                        {% if product.barcode %}<div class="row-sub">{{ product.barcode }}</div>{% endif %}
+                    </td>
+                    <td>{{ product.category.name }}</td>
+                    <td>₱ {{ product.selling_price|floatformat:2 }}</td>
+                    <td>{{ product.get_unit_display }}</td>
+                    <td>{{ product.get_tax_status_display }}</td>
+                    <td>{% if product.track_inventory %}Tracked{% else %}Not tracked{% endif %}</td>
+                    <td>
+                        {% if product.is_active %}<span class="status">ACTIVE</span>
+                        {% else %}<span class="status status-muted">INACTIVE</span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="icon-actions">
+                            <button class="icon-action" type="button" data-open-view aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                            <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'products:product_edit' product.pk %}" data-modal-title="Edit {{ product.name }}" aria-label="Edit" title="Edit">{% icon "pencil" 16 %}</button>
+                            <form method="post" action="{% url 'products:product_toggle' product.pk %}" data-confirm="{% if product.is_active %}Deactivate{% else %}Activate{% endif %} “{{ product.name }}”?">
+                                {% csrf_token %}
+                                <button class="icon-action {% if product.is_active %}icon-action-danger{% else %}icon-action-success{% endif %}" type="submit" aria-label="{% if product.is_active %}Deactivate{% else %}Activate{% endif %}" title="{% if product.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                    {% if product.is_active %}{% icon "ban" 16 %}{% else %}{% icon "power" 16 %}{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            <h3>No products yet</h3>
+            <p>Add a category first, then create products the POS can sell.</p>
+        </div>
+        {% endif %}
+    {% else %}
+        {% if categories %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Sort</th>
+                    <th>Products</th>
+                    <th>Status</th>
+                    <th class="col-actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr
+                    data-view-title="{{ category.name }}"
+                    data-view-sort="{{ category.sort_order }}"
+                    data-view-products="{{ category.product_count }}"
+                    data-view-status="{% if category.is_active %}Active{% else %}Inactive{% endif %}"
+                >
+                    <td class="row-title">{{ category.name }}</td>
+                    <td>{{ category.sort_order }}</td>
+                    <td>{{ category.product_count }}</td>
+                    <td>
+                        {% if category.is_active %}<span class="status">ACTIVE</span>
+                        {% else %}<span class="status status-muted">INACTIVE</span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="icon-actions">
+                            <button class="icon-action" type="button" data-open-view aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                            <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'products:category_edit' category.pk %}" data-modal-title="Edit {{ category.name }}" aria-label="Edit" title="Edit">{% icon "pencil" 16 %}</button>
+                            <form method="post" action="{% url 'products:category_toggle' category.pk %}" data-confirm="{% if category.is_active %}Deactivate{% else %}Activate{% endif %} “{{ category.name }}”?">
+                                {% csrf_token %}
+                                <button class="icon-action {% if category.is_active %}icon-action-danger{% else %}icon-action-success{% endif %}" type="submit" aria-label="{% if category.is_active %}Deactivate{% else %}Activate{% endif %}" title="{% if category.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                    {% if category.is_active %}{% icon "ban" 16 %}{% else %}{% icon "power" 16 %}{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            <h3>No categories yet</h3>
+            <p>Create categories like Drinks, Snacks, and Sports Gear before adding products.</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

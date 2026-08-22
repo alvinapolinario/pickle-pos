@@ -1,0 +1,26 @@
+{% load console_icons %}
+<form method="post" action="{{ action_url }}" enctype="multipart/form-data" class="catalog-form" data-modal-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+    <div class="form-grid">
+        {% for field in form %}
+        {% if field.is_hidden %}
+            {{ field }}
+        {% else %}
+        <div class="field {% if field.name == 'description' or field.name == 'image' %}field-span{% endif %}">
+            {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="check-label">{{ field }} {{ field.label }}</label>
+            {% else %}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+            {% endif %}
+            {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="form-actions">
+        <a class="btn-secondary" href="{{ list_url }}" data-modal-close>Cancel</a>
+        <button class="btn-primary btn-compact" type="submit">{{ submit_label|default:"Save" }}</button>
+    </div>
+</form>

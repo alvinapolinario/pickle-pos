@@ -34,10 +34,15 @@ media/
 *.swp
 *.swo
 
+# Backups
+backups/
+
 # Docker
 postgres_data/
 redis_data/
 backend/django_admin/.test.sqlite3
+backend/celerybeat-schedule
+backend/celerybeat-schedule.*
 
 # Flutter / mobile
 mobile/pos_app/.dart_tool/

@@ -1,0 +1,47 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="text" name="action" value="{{ filter_action }}" placeholder="Action">
+        <input class="field-input" type="text" name="entity" value="{{ filter_entity }}" placeholder="Entity">
+        <input class="field-input" type="text" name="user" value="{{ filter_user }}" placeholder="Username">
+        <button class="btn-secondary" type="submit">Filter</button>
+        <a class="btn-secondary" href="{% url 'console:audit_list' %}">Clear</a>
+    </form>
+</div>
+
+<article class="card module-card">
+    {% if logs %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>Action</th>
+                <th>Entity</th>
+                <th>User</th>
+                <th>IP</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.created_at|date:"M j, Y H:i" }}</td>
+                <td class="row-title">{{ log.action }}</td>
+                <td>{{ log.entity_type }}:{{ log.entity_id }}</td>
+                <td>{{ log.user|default:"—" }}</td>
+                <td>{{ log.ip_address|default:"—" }}</td>
+                <td>{{ log.reason|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No audit events</h3>
+        <p>Sensitive POS, booking, and login actions appear here. Older rows are pruned after the retention window.</p>
+    </div>
+    {% endif %}
+</article>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search supplier">
+        <select class="field-input" name="status">
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New supplier" data-modal-key="create">
+        {% icon "plus" 16 %}
+        Add supplier
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if suppliers %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Supplier</th>
+                <th>Contact</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+            <tr
+                data-view-title="{{ supplier.name }}"
+                data-view-contact="{{ supplier.contact_name|default:'—' }}"
+                data-view-phone="{{ supplier.phone|default:'—' }}"
+                data-view-email="{{ supplier.email|default:'—' }}"
+                data-view-address="{{ supplier.address|default:'—' }}"
+                data-view-status="{% if supplier.is_active %}Active{% else %}Inactive{% endif %}"
+            >
+                <td class="row-title">{{ supplier.name }}</td>
+                <td>{{ supplier.contact_name|default:"—" }}</td>
+                <td>{{ supplier.phone|default:"—" }}</td>
+                <td>{{ supplier.email|default:"—" }}</td>
+                <td>
+                    {% if supplier.is_active %}<span class="status">ACTIVE</span>
+                    {% else %}<span class="status status-muted">INACTIVE</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'purchasing:supplier_edit' supplier.pk %}" data-modal-title="Edit {{ supplier.name }}" aria-label="Edit" title="Edit">{% icon "pencil" 16 %}</button>
+                        <form method="post" action="{% url 'purchasing:supplier_toggle' supplier.pk %}" data-confirm="{% if supplier.is_active %}Deactivate{% else %}Activate{% endif %} “{{ supplier.name }}”?">
+                            {% csrf_token %}
+                            <button class="icon-action {% if supplier.is_active %}icon-action-danger{% else %}icon-action-success{% endif %}" type="submit" aria-label="{% if supplier.is_active %}Deactivate{% else %}Activate{% endif %}" title="{% if supplier.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                {% if supplier.is_active %}{% icon "ban" 16 %}{% else %}{% icon "power" 16 %}{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No suppliers yet</h3>
+        <p>Add vendors before creating purchase orders and receiving stock.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

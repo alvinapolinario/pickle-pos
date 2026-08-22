@@ -1,0 +1,48 @@
+<div class="detail-list">
+    <div class="detail-row"><span>Supplier</span><strong>{{ po.supplier.name }}</strong></div>
+    <div class="detail-row"><span>Status</span><strong>{{ po.get_status_display }}</strong></div>
+    <div class="detail-row"><span>Expected</span><strong>{{ po.expected_date|date:"M j, Y"|default:"—" }}</strong></div>
+    <div class="detail-row"><span>Notes</span><strong>{{ po.notes|default:"—" }}</strong></div>
+</div>
+
+<h3 class="detail-heading">Items</h3>
+<table class="line-table">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Ordered</th>
+            <th>Received</th>
+            <th>Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity_ordered|floatformat:3 }}</td>
+            <td>{{ item.quantity_received|floatformat:3 }}</td>
+            <td>₱ {{ item.unit_cost|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="row-sub">No items</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if receipts %}
+<h3 class="detail-heading">Receipts</h3>
+<ul class="detail-notes">
+    {% for receipt in receipts %}
+    <li>{{ receipt.receipt_number }} · {{ receipt.created_at|date:"M j, g:i A" }} · {{ receipt.received_by|default:"—" }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if returns %}
+<h3 class="detail-heading">Returns</h3>
+<ul class="detail-notes">
+    {% for ret in returns %}
+    <li>{{ ret.return_number }} · {{ ret.created_at|date:"M j, g:i A" }} · {{ ret.returned_by|default:"—" }}</li>
+    {% endfor %}
+</ul>
+{% endif %}

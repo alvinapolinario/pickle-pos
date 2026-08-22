@@ -128,21 +128,29 @@ Standard normalized POS structure.
 ## Courts
 
 ### courts
-`branch_id`, `name`, `status` (available, occupied, maintenance)
+`branch_id`, `code`, `name`, `status` (available, maintenance), `hourly_rate`, `sort_order`, `is_active`. Occupied is computed from live bookings, not stored.
 
 ### court_rates
-Hourly pricing by day-of-week, membership tier.
+Weekday hourly override (`weekday` 0=Monday … 6=Sunday). Default rate stays on `courts.hourly_rate`.
 
 ### bookings
 | Column | Type | Notes |
 |--------|------|-------|
 | court_id | FK | |
-| customer_id | FK nullable | |
+| customer_id | FK nullable | Walk-in allowed |
+| booked_by_id | FK | Cashier |
+| booking_number | VARCHAR(50) | Unique per branch (`BK-YYYYMMDD-0001`) |
 | start_at | TIMESTAMPTZ | |
-| end_at | TIMESTAMPTZ | |
+| end_at | TIMESTAMPTZ | Must be after `start_at` |
 | status | VARCHAR(20) | confirmed, cancelled, completed |
+| amount | NUMERIC(14,2) | Server-quoted |
+| payment_method | VARCHAR(20) | cash, gcash, maya, bank_transfer, other |
+| payment_status | VARCHAR(20) | unpaid, paid, refunded |
 
-**Constraint:** PostgreSQL `EXCLUDE USING gist (court_id WITH =, tstzrange(start_at, end_at) WITH &&) WHERE (status != 'cancelled')`
+### booking_refunds
+Full refund of a paid booking. Cancels the slot. Amount is server-authoritative (`booking.amount`). Document numbers unique per branch (`BKR-`).
+
+**Overlap:** `SELECT FOR UPDATE` on the court plus a service-level range check (`start_at < end AND end_at > start`) for confirmed/completed bookings. PostgreSQL `EXCLUDE USING gist` is deferred until the test runner is Postgres-only.
 
 ---
 
@@ -158,15 +166,15 @@ Hourly pricing by day-of-week, membership tier.
 
 ## Purchasing
 
-### suppliers / purchase_orders / purchase_items / purchase_receipts
-Standard PO workflow with receiving → inventory_movements (stock_in).
+### suppliers / purchase_orders / purchase_items / purchase_receipts / purchase_returns
+PO workflow: draft → ordered → receive (`stock_in`) → optional return (`stock_out`). Quantity received is net of returns. Document numbers are unique per branch (`PO-`, `GRN-`, `PRN-`).
 
 ---
 
 ## Operations
 
-### expenses
-`category_id`, `amount`, `expense_date`, `payee`, `payment_method`, `approved_by_id`
+### expenses / expense_categories
+`branch_id`, `category_id`, `amount`, `incurred_on`, `notes`, `created_by_id`. Categories are branch-scoped. Used by financial reports.
 
 ### audit_logs
 Immutable: `action`, `entity_type`, `entity_id`, `previous_values`, `new_values`, `device_id`, `ip_address`

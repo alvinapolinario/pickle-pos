@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in — Pickleball POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'console/css/app.css' %}">
+</head>
+<body class="login-body">
+    <form class="login-card" method="post" action="{% url 'console:login' %}">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <div class="brand" style="padding:0;">
+            <div class="brand-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" width="22" height="22">
+                    <path d="M7 14c4-9 13-9 14-3-3 8-10 11-14 8Z"/>
+                    <path d="M4 20c2-2 4-4 6-5"/>
+                </svg>
+            </div>
+            <div class="brand-text" style="color:#0b1f3a;">PICKLEBALL POS</div>
+        </div>
+        <h1>Welcome back</h1>
+        <p>Sign in to the admin console.</p>
+        {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+        <div class="field">
+            <label for="id_username">Username</label>
+            {{ form.username }}
+        </div>
+        <div class="field">
+            <label for="id_password">Password</label>
+            {{ form.password }}
+        </div>
+        <button class="btn-primary" type="submit">Sign in</button>
+    </form>
+</body>
+</html>

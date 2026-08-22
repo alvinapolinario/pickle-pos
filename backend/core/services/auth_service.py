@@ -16,6 +16,7 @@ from redis import Redis
 from core.config.settings import Settings, get_settings
 from core.domain.auth import AuthenticatedUser
 from core.domain.exceptions import AuthenticationError
+from core.services.security import LoginLockout
 
 if TYPE_CHECKING:
     from apps.accounts.models import Device, RefreshToken, User
@@ -29,6 +30,11 @@ class AuthService:
     def __init__(self, settings: Settings | None = None, redis_client: Redis | None = None) -> None:
         self.settings = settings or get_settings()
         self.redis = redis_client
+        self.lockout = LoginLockout(
+            redis_client,
+            max_attempts=self.settings.login_max_attempts,
+            window_seconds=self.settings.login_lockout_seconds,
+        )
 
     def authenticate_user(
         self,
@@ -39,19 +45,23 @@ class AuthService:
     ) -> User:
         from apps.accounts.models import Device, User
 
+        self.lockout.assert_unlocked(username)
         user = authenticate(username=username, password=password) if password else None
 
         if user is None and pin:
             try:
                 candidate = User.objects.get(username=username, is_active=True)
             except User.DoesNotExist as exc:
+                self.lockout.record_failure(username)
                 raise AuthenticationError("Invalid credentials") from exc
 
             if not candidate.pin_hash or not check_password(pin, candidate.pin_hash):
+                self.lockout.record_failure(username)
                 raise AuthenticationError("Invalid credentials")
             user = candidate
 
         if user is None:
+            self.lockout.record_failure(username)
             raise AuthenticationError("Invalid credentials")
 
         if not user.is_active:
@@ -63,7 +73,12 @@ class AuthService:
                 raise AuthenticationError("Device is not registered or inactive")
             if device.branch_id and user.branch_id and device.branch_id != user.branch_id:
                 raise AuthenticationError("Device is not authorized for this branch")
+            from django.utils import timezone
 
+            device.last_seen_at = timezone.now()
+            device.save(update_fields=["last_seen_at", "updated_at"])
+
+        self.lockout.clear(username)
         return user
 
     def build_authenticated_user(self, user: User) -> AuthenticatedUser:

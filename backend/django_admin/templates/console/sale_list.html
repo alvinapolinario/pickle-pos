@@ -1,0 +1,69 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search transaction or receipt">
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <div class="icon-actions">
+        {% if current_shift %}
+        <button class="btn-secondary btn-compact" type="button" data-open-form="{{ hold_url }}" data-modal-title="Hold order" data-modal-key="hold">{% icon "clock-3" 16 %} Hold</button>
+        <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New sale" data-modal-key="create">{% icon "plus" 16 %} New sale</button>
+        {% else %}
+        <p class="row-sub">Open a shift before taking sales.</p>
+        {% endif %}
+    </div>
+</div>
+
+<article class="card module-card">
+    {% if sales %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Transaction</th>
+                <th>Receipt</th>
+                <th>Cashier</th>
+                <th>Net</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr>
+                <td>
+                    <div class="row-title mono">{{ sale.transaction_number }}</div>
+                    <div class="row-sub">{{ sale.created_at|date:"M j, g:i A" }}</div>
+                </td>
+                <td class="mono">{{ sale.receipt_number|default:"—" }}</td>
+                <td>{{ sale.cashier }}</td>
+                <td>₱ {{ sale.net_amount|floatformat:2 }}</td>
+                <td>
+                    {% if sale.status == 'completed' %}<span class="status">COMPLETED</span>
+                    {% elif sale.status == 'held' %}<span class="status status-warn">HELD</span>
+                    {% else %}<span class="status status-muted">VOID</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view="{% url 'sales:sale_detail' sale.pk %}" data-modal-title="{{ sale.transaction_number }}" aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                        {% if sale.status == 'held' and current_shift %}
+                        <button class="icon-action icon-action-success" type="button" data-open-form="{% url 'sales:sale_resume' sale.pk %}" data-modal-title="Resume {{ sale.transaction_number }}" aria-label="Resume" title="Resume">{% icon "play" 16 %}</button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No sales yet</h3>
+        <p>Open a cashier shift, then ring up a ticket. Totals are always calculated on the server.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" with view_wide=True %}
+{% endblock %}

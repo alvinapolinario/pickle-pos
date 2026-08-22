@@ -1,0 +1,16 @@
+<div class="detail-list">
+    <div class="detail-row"><span>Cashier</span><strong>{{ shift.cashier }}</strong></div>
+    <div class="detail-row"><span>Status</span><strong>{{ shift.get_status_display }}</strong></div>
+    <div class="detail-row"><span>Opening</span><strong>₱ {{ shift.opening_cash|floatformat:2 }}</strong></div>
+    <div class="detail-row"><span>Expected</span><strong>₱ {{ expected_cash|floatformat:2 }}</strong></div>
+    <div class="detail-row"><span>Actual</span><strong>{% if shift.actual_cash is not None %}₱ {{ shift.actual_cash|floatformat:2 }}{% else %}—{% endif %}</strong></div>
+    <div class="detail-row"><span>Over/short</span><strong>{% if shift.over_short is not None %}₱ {{ shift.over_short|floatformat:2 }}{% else %}—{% endif %}</strong></div>
+</div>
+{% if transactions %}
+<h3 class="detail-heading">Cash movements</h3>
+<ul class="detail-notes">
+    {% for txn in transactions %}
+    <li>{{ txn.get_transaction_type_display }} ₱ {{ txn.amount|floatformat:2 }} · {{ txn.reason|default:"—" }} · {{ txn.created_at|date:"g:i A" }}</li>
+    {% endfor %}
+</ul>
+{% endif %}

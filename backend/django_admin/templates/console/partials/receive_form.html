@@ -1,0 +1,53 @@
+{% load console_icons %}
+<form method="post" action="{{ action_url }}" class="catalog-form" data-modal-form>
+    {% csrf_token %}
+    {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+    {% if formset.non_form_errors %}{{ formset.non_form_errors }}{% endif %}
+    <div class="form-grid">
+        {% for field in form %}
+        {% if field.is_hidden %}
+            {{ field }}
+        {% else %}
+        <div class="field {% if field.name == 'notes' %}field-span{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if po %}
+    {{ formset.management_form }}
+    <table class="line-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>{% if returning %}Received{% else %}Outstanding{% endif %}</th>
+                <th>Qty</th>
+                <th>Unit cost</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in formset %}
+            <tr>
+                {% for hidden in line.hidden_fields %}{{ hidden }}{% endfor %}
+                <td>{{ line.product_name|default:"—" }}</td>
+                <td>{{ line.available|default:"—" }}</td>
+                <td>{{ line.quantity }}</td>
+                <td>{{ line.unit_cost }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="row-sub">{% if returning %}Nothing left to return.{% else %}Nothing outstanding on this PO.{% endif %}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="row-sub">Select a purchase order to load outstanding items.</p>
+    {% endif %}
+
+    <div class="form-actions">
+        <a class="btn-secondary" href="{{ list_url }}" data-modal-close>Cancel</a>
+        <button class="btn-primary btn-compact" type="submit" {% if not formset.forms %}disabled{% endif %}>{{ submit_label }}</button>
+    </div>
+</form>

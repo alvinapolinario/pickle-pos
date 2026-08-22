@@ -11,7 +11,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY backend/pyproject.toml /app/backend/
-RUN pip install --no-cache-dir -e ".[dev]"
-
 COPY backend /app/backend
+RUN pip install --no-cache-dir -e ".[dev]"

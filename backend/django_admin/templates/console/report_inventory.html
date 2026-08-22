@@ -1,0 +1,156 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="date" name="from" value="{{ start }}">
+        <input class="field-input" type="date" name="to" value="{{ end }}">
+        <button class="btn-secondary" type="submit">Filter</button>
+        <a class="btn-secondary" href="?from={{ start }}&to={{ end }}&export=csv">Export CSV</a>
+    </form>
+</div>
+
+<section class="kpi-grid kpi-grid-4">
+    <article class="card kpi">
+        <p class="kpi-label">Stock value</p>
+        <div class="kpi-value">₱ {{ report.valuation|floatformat:2 }}</div>
+        <p class="kpi-period">{{ report.on_hand_skus }} of {{ report.skus }} SKUs on hand</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Low stock</p>
+        <div class="kpi-value">{{ report.low_count }}</div>
+        <p class="kpi-period">At or below reorder level</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Wastage</p>
+        <div class="kpi-value">₱ {{ report.wastage|floatformat:2 }}</div>
+        <p class="kpi-period">In the selected range</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Expired</p>
+        <div class="kpi-value">₱ {{ report.expired|floatformat:2 }}</div>
+        <p class="kpi-period">In the selected range</p>
+    </article>
+</section>
+
+<section class="report-grid">
+    <article class="card module-card">
+        <div class="card-head"><h3>Current stock</h3></div>
+        {% if report.stock %}
+        <table class="data-table">
+            <thead><tr><th>Product</th><th>On hand</th><th>Value</th></tr></thead>
+            <tbody>
+                {% for row in report.stock %}
+                <tr>
+                    <td class="row-title">{{ row.name }} <span class="row-sub">{{ row.sku }}</span></td>
+                    <td>{% if row.is_low %}<span class="status status-muted">{{ row.qty }}</span>{% else %}{{ row.qty }}{% endif %}</td>
+                    <td>₱ {{ row.value|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No tracked products.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Low stock</h3></div>
+        {% if report.low %}
+        <table class="data-table">
+            <thead><tr><th>Product</th><th>On hand</th><th>Reorder</th></tr></thead>
+            <tbody>
+                {% for row in report.low %}
+                <tr>
+                    <td class="row-title">{{ row.name }}</td>
+                    <td>{{ row.qty }}</td>
+                    <td>{{ row.reorder }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">Nothing is at reorder level.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Fast movers</h3></div>
+        {% if report.fast %}
+        <table class="data-table">
+            <thead><tr><th>Product</th><th>Sold</th><th>Net</th></tr></thead>
+            <tbody>
+                {% for row in report.fast %}
+                <tr>
+                    <td class="row-title">{{ row.name }}</td>
+                    <td>{{ row.qty }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No sales in this range.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Slow movers</h3></div>
+        {% if report.slow %}
+        <table class="data-table">
+            <thead><tr><th>Product</th><th>On hand</th><th>Value</th></tr></thead>
+            <tbody>
+                {% for row in report.slow %}
+                <tr>
+                    <td class="row-title">{{ row.name }}</td>
+                    <td>{{ row.qty }}</td>
+                    <td>₱ {{ row.value|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">Every tracked SKU sold in this range.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="report-grid">
+    <article class="card module-card">
+        <div class="card-head"><h3>Movements by type</h3></div>
+        {% if report.types %}
+        <table class="data-table">
+            <thead><tr><th>Type</th><th>Count</th><th>Qty</th></tr></thead>
+            <tbody>
+                {% for row in report.types %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>{{ row.qty }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No ledger activity in this range.</p>
+        {% endif %}
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Recent movements</h3></div>
+        {% if report.movements %}
+        <table class="data-table">
+            <thead><tr><th>When</th><th>Product</th><th>Type</th><th>Qty</th></tr></thead>
+            <tbody>
+                {% for row in report.movements %}
+                <tr>
+                    <td>{{ row.created_at|date:"M j, g:i A" }}</td>
+                    <td>{{ row.product.name }}</td>
+                    <td>{{ row.get_movement_type_display }}</td>
+                    <td>{{ row.quantity }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No movements in this range.</p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}

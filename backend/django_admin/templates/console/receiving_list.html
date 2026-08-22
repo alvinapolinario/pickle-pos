@@ -1,0 +1,65 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search GRN, PO, or supplier">
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="Receive stock" data-modal-key="receive">
+        {% icon "package-check" 16 %}
+        Receive stock
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if receipts %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Receipt</th>
+                <th>PO</th>
+                <th>Supplier</th>
+                <th>Qty</th>
+                <th>Received</th>
+                <th>By</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for receipt in receipts %}
+            <tr
+                data-view-title="{{ receipt.receipt_number }}"
+                data-view-po="{{ receipt.purchase_order.po_number }}"
+                data-view-supplier="{{ receipt.purchase_order.supplier.name }}"
+                data-view-qty="{{ receipt.qty|default:0|floatformat:3 }}"
+                data-view-when="{{ receipt.created_at|date:'M j, Y g:i A' }}"
+                data-view-by="{{ receipt.received_by|default:'—' }}"
+                data-view-notes="{{ receipt.notes|default:'—' }}"
+            >
+                <td><span class="mono">{{ receipt.receipt_number }}</span></td>
+                <td>{{ receipt.purchase_order.po_number }}</td>
+                <td class="row-title">{{ receipt.purchase_order.supplier.name }}</td>
+                <td>{{ receipt.qty|default:0|floatformat:3 }}</td>
+                <td>{{ receipt.created_at|date:"M j, g:i A" }}</td>
+                <td>{{ receipt.received_by|default:"—" }}</td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No receipts yet</h3>
+        <p>Submit a purchase order, then post a goods receipt to add stock.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

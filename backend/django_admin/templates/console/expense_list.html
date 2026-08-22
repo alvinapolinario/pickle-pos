@@ -1,0 +1,52 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <p class="row-sub">Record operating costs so financial reports can estimate net income.</p>
+    <div class="icon-actions">
+        <button class="btn-secondary btn-compact" type="button" data-open-form="{{ category_url }}" data-modal-title="New expense category" data-modal-key="category">
+            {% icon "plus" 16 %}
+            Category
+        </button>
+        <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New expense" data-modal-key="create">
+            {% icon "plus" 16 %}
+            Add expense
+        </button>
+    </div>
+</div>
+
+<article class="card module-card">
+    {% if expenses %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th>By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td>{{ expense.incurred_on|date:"M j, Y" }}</td>
+                <td class="row-title">{{ expense.category.name }}</td>
+                <td>₱ {{ expense.amount|floatformat:2 }}</td>
+                <td>{{ expense.notes|default:"—" }}</td>
+                <td>{{ expense.created_by|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No expenses yet</h3>
+        <p>Add a category, then record rent, utilities, or wages. They appear on Financial Reports.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

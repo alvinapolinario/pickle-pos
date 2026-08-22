@@ -1,0 +1,28 @@
+<div class="detail-list">
+    <div class="detail-row"><span>Transaction</span><strong>{{ sale.transaction_number }}</strong></div>
+    <div class="detail-row"><span>Receipt</span><strong>{{ sale.receipt_number|default:"—" }}</strong></div>
+    <div class="detail-row"><span>Customer</span><strong>{% if sale.customer %}{{ sale.customer.name }}{% else %}Walk-in{% endif %}</strong></div>
+    <div class="detail-row"><span>Status</span><strong>{{ sale.get_status_display }} · {{ sale.get_payment_status_display }}</strong></div>
+    <div class="detail-row"><span>Gross</span><strong>₱ {{ sale.gross_amount|floatformat:2 }}</strong></div>
+    <div class="detail-row"><span>Discount</span><strong>₱ {{ sale.discount_amount|floatformat:2 }}</strong></div>
+    <div class="detail-row"><span>VAT</span><strong>₱ {{ sale.tax_amount|floatformat:2 }}</strong></div>
+    <div class="detail-row"><span>Net</span><strong>₱ {{ sale.net_amount|floatformat:2 }}</strong></div>
+    <div class="detail-row"><span>Change</span><strong>₱ {{ sale.change_amount|floatformat:2 }}</strong></div>
+</div>
+<h3 class="detail-heading">Items</h3>
+<ul class="detail-notes">
+    {% for item in sale.items.all %}
+    <li>{{ item.quantity }} × {{ item.name }} @ ₱ {{ item.unit_price|floatformat:2 }} = ₱ {{ item.line_net|floatformat:2 }}</li>
+    {% endfor %}
+</ul>
+{% if sale.payments.all %}
+<h3 class="detail-heading">Payments</h3>
+<ul class="detail-notes">
+    {% for payment in sale.payments.all %}
+    <li>{{ payment.get_method_display }} ₱ {{ payment.amount|floatformat:2 }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% if sale.notes %}
+<p class="row-sub">{{ sale.notes }}</p>
+{% endif %}

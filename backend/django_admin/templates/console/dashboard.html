@@ -1,0 +1,185 @@
+{% extends "console/base.html" %}
+{% load static console_icons %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{ sales_overview|json_script:"sales-overview-data" }}
+{{ payments|json_script:"payments-data" }}
+{{ occupancy|json_script:"occupancy-data" }}
+{% endblock %}
+
+{% block content %}
+{% if court_placeholder %}
+<p class="demo-note">Canteen sales, stock, and shifts are live. Court occupancy and bookings stay placeholder until Phase 5.</p>
+{% endif %}
+
+<section class="kpi-grid">
+    {% for kpi in kpis %}
+    <article class="card kpi">
+        <div class="kpi-head">
+            <div>
+                <p class="kpi-label">{{ kpi.label }}</p>
+                <p class="kpi-period">{{ kpi.period }}</p>
+            </div>
+            <div class="tone-icon tone-{{ kpi.tone }}">
+                {% if kpi.key == "total" %}{% icon "banknote" 16 %}
+                {% elif kpi.key == "canteen" %}{% icon "utensils" 16 %}
+                {% elif kpi.key == "court" %}{% icon "layout-grid" 16 %}
+                {% elif kpi.key == "transactions" %}{% icon "receipt" 16 %}
+                {% else %}{% icon "wallet" 16 %}{% endif %}
+            </div>
+        </div>
+        <div class="kpi-value">{{ kpi.value }}</div>
+        <div class="kpi-foot">
+            <div class="delta">
+                {% icon "trending-up" 14 %}
+                {{ kpi.delta }} <span>{{ kpi.delta_label }}</span>
+            </div>
+            <svg class="sparkline spark-{{ kpi.tone }}" width="88" height="28" viewBox="0 0 88 28" aria-hidden="true">
+                <polyline fill="none" stroke="currentColor" stroke-width="2" points="{{ kpi.sparkline_points }}"></polyline>
+            </svg>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+
+<section class="chart-grid">
+    <article class="card panel">
+        <div class="card-head">
+            <h2>Sales Overview</h2>
+            <select class="ghost-select"><option>This Week</option></select>
+        </div>
+        <div class="chart-wrap"><canvas id="salesOverviewChart"></canvas></div>
+    </article>
+    <article class="card panel">
+        <div class="card-head"><h2>Sales by Payment Method</h2></div>
+        <div class="chart-wrap donut"><canvas id="paymentsChart"></canvas></div>
+        <div class="legend">
+            {% for slice in payments.slices %}
+            <div class="legend-row">
+                <span class="swatch" style="background:{{ slice.color }}"></span>
+                {{ slice.label }} ({{ slice.value }}%)
+                <b>{{ slice.amount }}</b>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+    <article class="card panel">
+        <div class="card-head"><h2>Court Occupancy</h2></div>
+        <div class="chart-wrap donut"><canvas id="occupancyChart"></canvas></div>
+        <div class="legend">
+            {% for slice in occupancy.slices %}
+            <div class="legend-row">
+                <span class="swatch" style="background:{{ slice.color }}"></span>
+                {{ slice.label }}
+                <b>{{ slice.detail }}</b>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="ops-grid">
+    <article class="card panel">
+        <div class="card-head"><h3>Recent Transactions</h3></div>
+        <div class="list">
+            {% for txn in transactions %}
+            <div class="row-item">
+                <div class="mini-icon {{ txn.kind }}">
+                    {% if txn.kind == "canteen" %}{% icon "utensils" 16 %}{% else %}{% icon "layout-grid" 16 %}{% endif %}
+                </div>
+                <div>
+                    <div class="row-title">{{ txn.id }}</div>
+                    <div class="row-sub">{{ txn.type }}</div>
+                </div>
+                <div class="amount">{{ txn.amount }}<small>{{ txn.time }}</small></div>
+            </div>
+            {% empty %}
+            <p class="row-sub">No canteen sales yet today.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="card panel">
+        <div class="card-head"><h3>Low Stock Alerts</h3></div>
+        <div class="list">
+            {% for item in low_stock %}
+            <div class="row-item stock-item">
+                <div class="thumb {{ item.tone }}">{% icon "package" 16 %}</div>
+                <div>
+                    <div class="stock-top"><span>{{ item.name }}</span></div>
+                    <div class="stock-meta"><span>{{ item.qty }} in stock</span><span>Min {{ item.min }}</span></div>
+                    <div class="bar"><span style="width: {{ item.percent }}%"></span></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="card panel">
+        <div class="card-head"><h3>Today's Open Shifts</h3></div>
+        <table class="shift-table">
+            <thead>
+                <tr><th>Cashier</th><th>Open Time</th><th>Opening Cash</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for shift in shifts %}
+                <tr>
+                    <td>
+                        <div class="person">
+                            <div class="avatar">{{ shift.initials }}</div>
+                            {{ shift.name }}
+                        </div>
+                    </td>
+                    <td>{{ shift.open_time }}</td>
+                    <td>{{ shift.opening_cash }}</td>
+                    <td><span class="status">OPEN</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+</section>
+
+<section class="bottom-grid">
+    <article class="card panel">
+        <div class="card-head"><h3>Upcoming Court Bookings</h3></div>
+        <div class="booking-row">
+            {% for booking in bookings %}
+            <div class="booking">
+                <div class="booking-icon">{% icon "calendar-check" 14 %}</div>
+                <div class="booking-slot">{{ booking.slot }}</div>
+                <div class="booking-court">{{ booking.court }}</div>
+                <div class="booking-name">{{ booking.customer }}</div>
+                <span class="status">CONFIRMED</span>
+            </div>
+            {% empty %}
+            <p class="row-sub">No upcoming court bookings today.</p>
+            {% endfor %}
+        </div>
+    </article>
+    <article class="card panel">
+        <div class="card-head"><h3>Financial Summary <span style="color:#6b7c90;font-weight:500;font-size:13px;">This Month</span></h3></div>
+        <div class="finance-grid">
+            {% for item in financial %}
+            <div class="finance">
+                <div class="finance-icon tone-{{ item.tone }}">
+                    {% if item.tone == "blue" %}{% icon "banknote" 16 %}
+                    {% elif item.tone == "red" %}{% icon "circle-dollar-sign" 16 %}
+                    {% elif item.tone == "green" %}{% icon "wallet" 16 %}
+                    {% else %}{% icon "pie-chart" 16 %}{% endif %}
+                </div>
+                <div>
+                    <p>{{ item.label }}</p>
+                    <strong>{{ item.value }}</strong>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'console/js/dashboard.js' %}"></script>
+{% endblock %}

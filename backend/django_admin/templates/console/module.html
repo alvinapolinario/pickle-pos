@@ -1,0 +1,23 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<article class="card module-card">
+    {% if rows %}
+    <table class="data-table">
+        <thead>
+            <tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>{{ page_title }}</h3>
+        <p>{{ empty_message }}</p>
+    </div>
+    {% endif %}
+</article>
+{% endblock %}

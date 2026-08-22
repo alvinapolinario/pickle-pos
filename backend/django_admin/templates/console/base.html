@@ -1,0 +1,109 @@
+{% load static console_icons %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} — Pickleball POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'console/css/app.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 14c4-9 13-9 14-3-3 8-10 11-14 8Z"/>
+                    <path d="M4 20c2-2 4-4 6-5"/>
+                    <circle cx="15.5" cy="9.5" r="1.2" fill="white" stroke="none"/>
+                </svg>
+            </div>
+            <div class="brand-text">PICKLEBALL POS</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            {% for section in nav_sections %}
+                {% if section.label %}<div class="nav-label">{{ section.label }}</div>{% endif %}
+                {% for item in section.items %}
+                    <a class="nav-item {% if page_name == item.name %}is-active{% endif %}"
+                       href="{% if item.url_name %}{% url item.url_name %}{% elif item.name == 'dashboard' %}{% url 'console:dashboard' %}{% else %}{% url 'console:module' item.name %}{% endif %}">
+                        {% icon item.icon 18 %}
+                        <span>{{ item.label }}</span>
+                    </a>
+                {% endfor %}
+            {% endfor %}
+        </nav>
+
+        <div class="sidebar-footer">
+            {% for item in nav_footer %}
+                <a class="nav-item {% if page_name == item.name %}is-active{% endif %}"
+                   href="{% if item.url_name %}{% url item.url_name %}{% else %}{% url 'console:module' item.name %}{% endif %}">
+                    {% icon item.icon 18 %}
+                    <span>{{ item.label }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <div class="workspace">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="icon-btn" type="button" data-nav-toggle aria-label="Toggle navigation">{% icon "menu" 18 %}</button>
+                <div>
+                    <h1 class="page-title">{{ page_title }}</h1>
+                    <p class="page-subtitle">{{ page_subtitle }}</p>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <label class="chip">
+                    {% icon "calendar" 16 %}
+                    <input type="date" name="report_date" value="{{ report_date|date:'Y-m-d' }}" style="border:0;outline:0;background:transparent;width:128px;">
+                </label>
+                <div class="chip-wrap">
+                    <select class="select-chip" name="branch">
+                        {% for branch in console_branches %}
+                            <option value="{{ branch.id }}" {% if console_current_branch and branch.id == console_current_branch.id %}selected{% endif %}>{{ branch.name }}</option>
+                        {% empty %}
+                            <option>Main Branch</option>
+                        {% endfor %}
+                    </select>
+                    <span class="chev">{% icon "chevron-down" 14 %}</span>
+                </div>
+                <button class="icon-btn raised" type="button" aria-label="Search">{% icon "search" 18 %}</button>
+                <button class="icon-btn raised bell" type="button" aria-label="Notifications">
+                    {% icon "bell" 18 %}
+                    {% if notification_count %}<span class="badge">{{ notification_count }}</span>{% endif %}
+                </button>
+                <div class="profile">
+                    <div class="avatar">{{ console_user_initials }}</div>
+                    <div>
+                        <div class="profile-name">{{ console_user_name }}</div>
+                        <div class="profile-role">{{ console_user_role }}</div>
+                    </div>
+                    <form method="post" action="{% url 'console:logout' %}">
+                        {% csrf_token %}
+                        <button class="icon-btn ghost logout-btn" type="submit" aria-label="Log out">{% icon "log-out" 18 %}</button>
+                    </form>
+                </div>
+            </div>
+        </header>
+        <main class="content">
+            {% if messages %}
+            <ul class="flash-list">
+                {% for message in messages %}
+                <li class="flash flash-{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+<script src="{% static 'console/js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

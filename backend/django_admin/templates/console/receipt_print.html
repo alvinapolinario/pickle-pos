@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ page_title }}</title>
+    <style>
+        body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin: 24px; }
+        pre { white-space: pre; font-size: 13px; }
+        @media print { button { display: none; } }
+    </style>
+</head>
+<body>
+<pre>{{ receipt.text }}</pre>
+<button type="button" onclick="window.print()">Print</button>
+</body>
+</html>

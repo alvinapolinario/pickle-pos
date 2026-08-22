@@ -1,0 +1,72 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <div>
+        {% if current_shift %}
+        <p class="row-title">Open shift · {{ current_shift.cashier }} · opening ₱ {{ current_shift.opening_cash|floatformat:2 }} · expected ₱ {{ expected_cash|floatformat:2 }}</p>
+        {% else %}
+        <p class="row-sub">No open shift. Open a shift before taking sales.</p>
+        {% endif %}
+    </div>
+    <div class="icon-actions">
+        {% if current_shift %}
+        <button class="btn-secondary btn-compact" type="button" data-open-form="{{ cash_in_url }}" data-modal-title="Cash in">Cash in</button>
+        <button class="btn-secondary btn-compact" type="button" data-open-form="{{ cash_out_url }}" data-modal-title="Cash out">Cash out</button>
+        <button class="btn-primary btn-compact" type="button" data-open-form="{{ close_url }}" data-modal-title="Close shift">Close shift</button>
+        {% else %}
+        <button class="btn-primary btn-compact" type="button" data-open-form="{{ open_url }}" data-modal-title="Open shift" data-modal-key="create">
+            {% icon "plus" 16 %} Open shift
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<article class="card module-card">
+    {% if shifts %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Opened</th>
+                <th>Cashier</th>
+                <th>Opening</th>
+                <th>Expected</th>
+                <th>Actual</th>
+                <th>Over/Short</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for shift in shifts %}
+            <tr>
+                <td>{{ shift.opened_at|date:"M j, g:i A" }}</td>
+                <td class="row-title">{{ shift.cashier }}</td>
+                <td>₱ {{ shift.opening_cash|floatformat:2 }}</td>
+                <td>{% if shift.expected_cash is not None %}₱ {{ shift.expected_cash|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td>{% if shift.actual_cash is not None %}₱ {{ shift.actual_cash|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td>{% if shift.over_short is not None %}₱ {{ shift.over_short|floatformat:2 }}{% else %}—{% endif %}</td>
+                <td>
+                    {% if shift.status == 'open' %}<span class="status">OPEN</span>
+                    {% else %}<span class="status status-muted">CLOSED</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view="{% url 'shifts:shift_detail' shift.pk %}" data-modal-title="Shift #{{ shift.pk }}" aria-label="Status">{% icon "eye" 16 %}</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No shifts yet</h3>
+        <p>Open a cashier shift to start selling.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" with view_wide=True %}
+{% endblock %}

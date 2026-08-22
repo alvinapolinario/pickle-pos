@@ -9,8 +9,10 @@ DEFAULT_PERMISSIONS = [
     ("sales.create", "Create sales", "sales"),
     ("sales.void", "Void sales", "sales"),
     ("sales.refund", "Process refunds", "sales"),
+    ("sales.discount", "Apply sale discounts", "sales"),
     ("inventory.*", "All inventory operations", "inventory"),
     ("inventory.adjust", "Adjust inventory", "inventory"),
+    ("catalog.manage", "Manage products and categories", "catalog"),
     ("courts.*", "All court operations", "courts"),
     ("reports.view", "View reports", "reports"),
     ("users.manage", "Manage users", "users"),
@@ -28,6 +30,7 @@ DEFAULT_ROLES = {
         "permissions": [
             "sales.*",
             "inventory.*",
+            "catalog.manage",
             "courts.*",
             "reports.view",
             "users.manage",
@@ -40,6 +43,7 @@ DEFAULT_ROLES = {
         "permissions": [
             "sales.*",
             "inventory.*",
+            "catalog.manage",
             "courts.*",
             "reports.view",
             "audit.view",
@@ -51,7 +55,7 @@ DEFAULT_ROLES = {
     },
     "inventory_staff": {
         "name": "Inventory Staff",
-        "permissions": ["inventory.*"],
+        "permissions": ["inventory.*", "catalog.manage"],
     },
     "court_staff": {
         "name": "Court Staff",
@@ -90,5 +94,15 @@ class Command(BaseCommand):
             )
             role.permissions.set([permission_map[code] for code in config["permissions"]])
             self.stdout.write(self.style.SUCCESS(f"Seeded role: {role.name}"))
+
+        from apps.branches.models import Branch
+
+        branch, created = Branch.objects.get_or_create(
+            code="MAIN",
+            defaults={"name": "Main Branch", "city": "Manila", "timezone": "Asia/Manila"},
+        )
+        self.stdout.write(
+            self.style.SUCCESS(f"{'Created' if created else 'Using'} branch: {branch.name}")
+        )
 
         self.stdout.write(self.style.SUCCESS("RBAC seed complete"))

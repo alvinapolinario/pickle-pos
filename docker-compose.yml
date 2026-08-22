@@ -31,7 +31,7 @@ services:
       dockerfile: backend/Dockerfile
     command: >
       sh -c "python django_admin/manage.py migrate --noinput &&
-             python django_admin/manage.py runserver 0.0.0.0:8000"
+             python django_admin/manage.py runserver 0.0.0.0:7100"
     env_file:
       - .env
     environment:
@@ -39,7 +39,7 @@ services:
     volumes:
       - ./backend:/app/backend
     ports:
-      - "8000:8000"
+      - "7100:7100"
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,13 +50,13 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    command: uvicorn fastapi_api.main:app --host 0.0.0.0 --port 8001 --reload
+    command: uvicorn fastapi_api.main:app --host 0.0.0.0 --port 7101 --reload
     env_file:
       - .env
     volumes:
       - ./backend:/app/backend
     ports:
-      - "8001:8001"
+      - "7101:7101"
     depends_on:
       postgres:
         condition: service_healthy

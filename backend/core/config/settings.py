@@ -29,7 +29,22 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
 
-    cors_origins: str = "http://localhost:3000,http://localhost:8000"
+    cors_origins: str = "http://localhost:3000,http://localhost:7100"
+
+    login_max_attempts: int = 5
+    login_lockout_seconds: int = 900
+    rate_limit_enabled: bool = False
+    login_rate_limit: int = 20
+    api_rate_limit: int = 120
+    audit_retention_days: int = 365
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.lower() == "production"
+
+    @property
+    def rate_limits_on(self) -> bool:
+        return self.rate_limit_enabled or self.is_production
 
     @property
     def django_allowed_hosts(self) -> list[str]:

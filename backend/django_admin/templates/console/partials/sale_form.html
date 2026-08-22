@@ -1,0 +1,116 @@
+{% load console_icons %}
+<form method="post" action="{{ action_url }}" class="catalog-form" data-modal-form data-line-form>
+    {% csrf_token %}
+    {% if hold %}<input type="hidden" name="intent" value="hold">{% endif %}
+    {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+    {% if item_formset.non_form_errors %}{{ item_formset.non_form_errors }}{% endif %}
+    {% if payment_formset.non_form_errors %}{{ payment_formset.non_form_errors }}{% endif %}
+
+    <div class="form-grid">
+        {% for field in form %}
+        {% if field.is_hidden %}
+            {{ field }}
+        {% else %}
+        <div class="field {% if field.name == 'notes' %}field-span{% endif %}">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="line-head">
+        <h3>Items</h3>
+        {% if not resume %}
+        <button class="btn-secondary btn-compact" type="button" data-add-line="items">{% icon "plus" 14 %} Add line</button>
+        {% endif %}
+    </div>
+    {{ item_formset.management_form }}
+    <table class="line-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                {% if not resume %}<th></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody data-line-rows="items">
+            {% for item_form in item_formset %}
+            <tr class="line-row" {% if item_form.DELETE.value %}hidden{% endif %}>
+                {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+                <td>{{ item_form.product }}{% if item_form.product.errors %}<div class="field-error">{{ item_form.product.errors|striptags }}</div>{% endif %}</td>
+                <td>{{ item_form.quantity }}{% if item_form.quantity.errors %}<div class="field-error">{{ item_form.quantity.errors|striptags }}</div>{% endif %}</td>
+                {% if not resume %}
+                <td class="line-remove">
+                    {% if item_form.DELETE %}{{ item_form.DELETE }}{% endif %}
+                    <button class="icon-action icon-action-danger" type="button" data-remove-line aria-label="Remove">{% icon "x" 14 %}</button>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if not resume %}
+    <template data-line-template="items">
+        <tr class="line-row">
+            {% for hidden in item_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+            <td>{{ item_formset.empty_form.product }}</td>
+            <td>{{ item_formset.empty_form.quantity }}</td>
+            <td class="line-remove">
+                {{ item_formset.empty_form.DELETE }}
+                <button class="icon-action icon-action-danger" type="button" data-remove-line aria-label="Remove">{% icon "x" 14 %}</button>
+            </td>
+        </tr>
+    </template>
+    {% endif %}
+
+    {% if not hold %}
+    <div class="line-head">
+        <h3>Payments</h3>
+        <button class="btn-secondary btn-compact" type="button" data-add-line="payments">{% icon "plus" 14 %} Add tender</button>
+    </div>
+    {{ payment_formset.management_form }}
+    <table class="line-table">
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Amount</th>
+                <th>Reference</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody data-line-rows="payments">
+            {% for pay_form in payment_formset %}
+            <tr class="line-row" {% if pay_form.DELETE.value %}hidden{% endif %}>
+                {% for hidden in pay_form.hidden_fields %}{{ hidden }}{% endfor %}
+                <td>{{ pay_form.method }}</td>
+                <td>{{ pay_form.amount }}{% if pay_form.amount.errors %}<div class="field-error">{{ pay_form.amount.errors|striptags }}</div>{% endif %}</td>
+                <td>{{ pay_form.reference }}</td>
+                <td class="line-remove">
+                    {% if pay_form.DELETE %}{{ pay_form.DELETE }}{% endif %}
+                    <button class="icon-action icon-action-danger" type="button" data-remove-line aria-label="Remove">{% icon "x" 14 %}</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <template data-line-template="payments">
+        <tr class="line-row">
+            {% for hidden in payment_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+            <td>{{ payment_formset.empty_form.method }}</td>
+            <td>{{ payment_formset.empty_form.amount }}</td>
+            <td>{{ payment_formset.empty_form.reference }}</td>
+            <td class="line-remove">
+                {{ payment_formset.empty_form.DELETE }}
+                <button class="icon-action icon-action-danger" type="button" data-remove-line aria-label="Remove">{% icon "x" 14 %}</button>
+            </td>
+        </tr>
+    </template>
+    {% endif %}
+
+    <div class="form-actions">
+        <a class="btn-secondary" href="{{ list_url }}" data-modal-close>Cancel</a>
+        <button class="btn-primary btn-compact" type="submit">{{ submit_label }}</button>
+    </div>
+</form>

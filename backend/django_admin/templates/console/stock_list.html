@@ -1,0 +1,87 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search name, SKU, barcode">
+        <select class="field-input" name="status">
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All tracked</option>
+            <option value="low" {% if status == 'low' %}selected{% endif %}>Low stock</option>
+            <option value="ok" {% if status == 'ok' %}selected{% endif %}>Healthy</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <div class="icon-actions">
+        <button class="btn-primary btn-compact" type="button" data-open-form="{{ move_url }}" data-modal-title="Record movement" data-modal-key="move">
+            {% icon "plus" 16 %}
+            Record movement
+        </button>
+        <button class="btn-secondary btn-compact" type="button" data-open-form="{{ count_url }}" data-modal-title="Stock count" data-modal-key="count">
+            {% icon "clipboard-list" 16 %}
+            Stock count
+        </button>
+    </div>
+</div>
+
+<article class="card module-card">
+    {% if products %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th>On hand</th>
+                <th>Reorder</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr
+                data-view-title="{{ product.name }}"
+                data-view-sku="{{ product.sku }}"
+                data-view-category="{{ product.category.name }}"
+                data-view-on-hand="{{ product.on_hand|floatformat:3 }}"
+                data-view-reorder="{{ product.reorder_level|floatformat:3 }}"
+                data-view-unit="{{ product.get_unit_display }}"
+                data-view-status="{% if product.reorder_level > 0 and product.on_hand <= product.reorder_level %}Low stock{% else %}Healthy{% endif %}"
+            >
+                <td><span class="mono">{{ product.sku }}</span></td>
+                <td>
+                    <div class="row-title">{{ product.name }}</div>
+                    <div class="row-sub">{{ product.get_unit_display }}</div>
+                </td>
+                <td>{{ product.category.name }}</td>
+                <td class="{% if product.reorder_level > 0 and product.on_hand <= product.reorder_level %}qty-low{% endif %}">{{ product.on_hand|floatformat:3 }}</td>
+                <td>{{ product.reorder_level|floatformat:3 }}</td>
+                <td>
+                    {% if product.reorder_level > 0 and product.on_hand <= product.reorder_level %}
+                    <span class="status status-warn">LOW</span>
+                    {% else %}
+                    <span class="status">OK</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{{ count_url }}?product={{ product.pk }}" data-modal-title="Count {{ product.name }}" aria-label="Count" title="Stock count">{% icon "clipboard-list" 16 %}</button>
+                        <button class="icon-action icon-action-success" type="button" data-open-form="{{ move_url }}?product={{ product.pk }}" data-modal-title="Move {{ product.name }}" aria-label="Record movement" title="Record movement">{% icon "plus" 16 %}</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No tracked stock</h3>
+        <p>Enable inventory tracking on products, then record opening stock from this page.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

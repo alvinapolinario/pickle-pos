@@ -1,0 +1,71 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="date" name="from" value="{{ start }}">
+        <input class="field-input" type="date" name="to" value="{{ end }}">
+        <button class="btn-secondary" type="submit">Filter</button>
+        <a class="btn-secondary" href="?from={{ start }}&to={{ end }}&export=csv">Export CSV</a>
+    </form>
+</div>
+
+<section class="kpi-grid kpi-grid-4">
+    <article class="card kpi">
+        <p class="kpi-label">Canteen after refunds</p>
+        <div class="kpi-value">₱ {{ report.canteen_after_refunds|floatformat:2 }}</div>
+        <p class="kpi-period">Gross ₱ {{ report.canteen_gross|floatformat:2 }}</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Court revenue</p>
+        <div class="kpi-value">₱ {{ report.court_revenue|floatformat:2 }}</div>
+        <p class="kpi-period">Refunds ₱ {{ report.court_refunds|floatformat:2 }}</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Gross profit</p>
+        <div class="kpi-value">₱ {{ report.gross_profit|floatformat:2 }}</div>
+        <p class="kpi-period">After COGS ₱ {{ report.cogs|floatformat:2 }}</p>
+    </article>
+    <article class="card kpi">
+        <p class="kpi-label">Estimated net</p>
+        <div class="kpi-value">₱ {{ report.net_income|floatformat:2 }}</div>
+        <p class="kpi-period">Expenses ₱ {{ report.expenses|floatformat:2 }}</p>
+    </article>
+</section>
+
+<section class="report-grid">
+    <article class="card module-card">
+        <div class="card-head"><h3>P&amp;L lines</h3></div>
+        <table class="data-table">
+            <thead><tr><th>Line</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for row in report.lines %}
+                <tr>
+                    <td class="row-title">{{ row.label }}</td>
+                    <td>₱ {{ row.amount|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </article>
+    <article class="card module-card">
+        <div class="card-head"><h3>Expenses by category</h3></div>
+        {% if report.expense_rows %}
+        <table class="data-table">
+            <thead><tr><th>Category</th><th>Count</th><th>Amount</th></tr></thead>
+            <tbody>
+                {% for row in report.expense_rows %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>₱ {{ row.total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No operating expenses in this range. Add them under Expenses.</p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}

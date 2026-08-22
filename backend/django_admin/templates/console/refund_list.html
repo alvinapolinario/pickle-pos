@@ -1,0 +1,38 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<article class="card module-card">
+    {% if refunds %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Refund</th>
+                <th>Sale</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>By</th>
+                <th>When</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for refund in refunds %}
+            <tr>
+                <td class="row-title mono">{{ refund.refund_number }}</td>
+                <td class="mono">{{ refund.sale.transaction_number }}</td>
+                <td>₱ {{ refund.amount|floatformat:2 }}</td>
+                <td>{{ refund.get_method_display }}</td>
+                <td>{{ refund.created_by|default:"—" }}</td>
+                <td>{{ refund.created_at|date:"M j, g:i A" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No refunds</h3>
+        <p>Refund a completed sale from Transactions. Returned qty restocks via the inventory ledger.</p>
+    </div>
+    {% endif %}
+</article>
+{% endblock %}

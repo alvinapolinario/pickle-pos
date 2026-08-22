@@ -1,0 +1,8 @@
+{% extends "console/base.html" %}
+
+{% block content %}
+<article class="card module-card form-card">
+    <h2>{{ modal_title }}</h2>
+    {% include form_partial|default:"console/partials/catalog_form.html" %}
+</article>
+{% endblock %}

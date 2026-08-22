@@ -111,7 +111,7 @@ Pricing, tax, discount, inventory, payments, bookings, shifts — all live in `c
         ┌─────▼─────┐                 ┌───────▼───────┐
         │  Django   │                 │   FastAPI     │
         │  Gunicorn │                 │   Uvicorn     │
-        │  :8000    │                 │   :8001       │
+        │  :7100    │                 │   :7101       │
         └─────┬─────┘                 └───────┬───────┘
               │         ┌──────────┐          │
               └────────►│   Core   │◄─────────┘
@@ -298,6 +298,15 @@ Base: `/api/v1`
 | POST | `/sales/{id}/refund` |
 | POST | `/sales/hold`, `/sales/hold/{id}/resume` |
 
+### Courts
+| GET | `/courts` | active courts for the cashier branch |
+| GET | `/courts/occupancy` | available / occupied / maintenance counts |
+| GET | `/bookings?date=` | confirmed bookings for a day |
+| POST | `/bookings/quote` | server-authoritative slot price |
+| POST | `/bookings` | create booking (overlap locked) |
+| POST | `/bookings/{id}/cancel` | cancel and free the slot (no money back) |
+| POST | `/bookings/{id}/refund` | refund paid booking and cancel the slot |
+
 ### Sync
 | POST | `/sync/push` | batch offline records |
 | GET | `/sync/pull?since=` | catalog + config delta |
@@ -379,6 +388,7 @@ lib/
 │   ├── receipt/
 │   ├── transactions/
 │   ├── refund/
+│   ├── bookings/
 │   └── settings/
 └── sync/
     ├── sync_engine.dart
@@ -492,7 +502,7 @@ COMMIT;
 | **4 — Android POS** | Flutter UI, SQLite, sync engine | Offline sale syncs correctly |
 | **5 — Courts** | Courts, rates, bookings, payments | No double booking |
 | **6 — Reporting** | Dashboards, exports | Daily sales report accurate |
-| **7 — Hardening** | Security audit, load tests, backups, monitoring | Production checklist green |
+| **7 — Hardening** | Lockout, rate limits, RBAC on money actions, audit viewer, backups, prod Compose | Production checklist green |
 
 ---
 

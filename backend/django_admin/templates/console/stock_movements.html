@@ -1,0 +1,80 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search product or notes">
+        <select class="field-input" name="type">
+            <option value="">All types</option>
+            <option value="stock_in" {% if movement_type == 'stock_in' %}selected{% endif %}>Stock In</option>
+            <option value="stock_out" {% if movement_type == 'stock_out' %}selected{% endif %}>Stock Out</option>
+            <option value="adjustment" {% if movement_type == 'adjustment' %}selected{% endif %}>Adjustment</option>
+            <option value="sale" {% if movement_type == 'sale' %}selected{% endif %}>Sale</option>
+            <option value="return" {% if movement_type == 'return' %}selected{% endif %}>Return</option>
+            <option value="wastage" {% if movement_type == 'wastage' %}selected{% endif %}>Wastage</option>
+            <option value="expired" {% if movement_type == 'expired' %}selected{% endif %}>Expired</option>
+            <option value="transfer" {% if movement_type == 'transfer' %}selected{% endif %}>Transfer</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ move_url }}" data-modal-title="Record movement" data-modal-key="move">
+        {% icon "plus" 16 %}
+        Record movement
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if movements %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>SKU</th>
+                <th>Product</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Reference</th>
+                <th>By</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movement in movements %}
+            <tr
+                data-view-title="{{ movement.product.name }}"
+                data-view-when="{{ movement.created_at|date:'M j, Y g:i A' }}"
+                data-view-sku="{{ movement.product.sku }}"
+                data-view-type="{{ movement.get_movement_type_display }}"
+                data-view-quantity="{{ movement.quantity|floatformat:3 }}"
+                data-view-unit-cost="₱ {{ movement.unit_cost|floatformat:2 }}"
+                data-view-reference="{{ movement.reference_type|default:'—' }}{% if movement.reference_id %} #{{ movement.reference_id }}{% endif %}"
+                data-view-notes="{{ movement.notes|default:'—' }}"
+                data-view-by="{{ movement.performed_by|default:'—' }}"
+            >
+                <td>{{ movement.created_at|date:"M j, g:i A" }}</td>
+                <td><span class="mono">{{ movement.product.sku }}</span></td>
+                <td class="row-title">{{ movement.product.name }}</td>
+                <td>{{ movement.get_movement_type_display }}</td>
+                <td class="{% if movement.quantity < 0 %}qty-low{% endif %}">{{ movement.quantity|floatformat:3 }}</td>
+                <td>{{ movement.reference_type|default:"—" }}</td>
+                <td>{{ movement.performed_by|default:"—" }}</td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action" type="button" data-open-view aria-label="Status" title="Status">{% icon "eye" 16 %}</button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>No movements yet</h3>
+        <p>Stock in, counts, sales, and wastage will appear here as an append-only ledger.</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}
