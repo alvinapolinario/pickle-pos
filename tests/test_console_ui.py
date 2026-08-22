@@ -22,6 +22,11 @@ def test_dashboard_renders_after_login(django_client, user):
     response = django_client.get(reverse("console:dashboard"))
     assert response.status_code == 200
     assert b"Total Sales" in response.content
+    assert b"Canteen Sales" in response.content
+    assert b"Court Revenue" in response.content
+    assert b"Transactions" in response.content
+    assert b"Gross Profit" in response.content
+    assert b"kpi-dashboard" in response.content
     assert b"PICKLEBALL POS" in response.content
     assert b"Recent Transactions" in response.content
 

@@ -227,6 +227,11 @@ button, input, select { font: inherit; }
   gap: 14px;
 }
 .kpi-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kpi-dashboard {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.kpi-dashboard .kpi:nth-child(-n+3) { grid-column: span 2; }
+.kpi-dashboard .kpi:nth-child(n+4) { grid-column: span 3; }
 .report-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -713,6 +718,7 @@ textarea.field-input {
 
 @media (max-width: 1280px) {
   .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .kpi-dashboard { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .kpi-grid-4, .report-grid { grid-template-columns: 1fr 1fr; }
   .chart-grid, .ops-grid, .bottom-grid { grid-template-columns: 1fr 1fr; }
   .booking-row { grid-template-columns: repeat(3, 1fr); }
@@ -726,6 +732,8 @@ textarea.field-input {
     transition: transform 0.2s ease;
   }
   body.nav-open .sidebar { transform: none; }
-  .kpi-grid, .kpi-grid-4, .report-grid, .chart-grid, .ops-grid, .bottom-grid, .booking-row, .finance-grid { grid-template-columns: 1fr; }
+  .kpi-grid, .kpi-grid-4, .kpi-dashboard, .report-grid, .chart-grid, .ops-grid, .bottom-grid, .booking-row, .finance-grid { grid-template-columns: 1fr; }
+  .kpi-dashboard .kpi:nth-child(-n+3),
+  .kpi-dashboard .kpi:nth-child(n+4) { grid-column: auto; }
   .topbar { height: auto; padding: 12px 16px; flex-wrap: wrap; }
 }
