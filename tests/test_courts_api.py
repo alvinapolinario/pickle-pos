@@ -46,17 +46,18 @@ def test_list_quote_book_and_reject_overlap(api_client, user, court):
     assert listed.status_code == 200
     assert len(listed.json()) == 1
 
-    cancelled = api_client.post(f"/api/v1/bookings/{created.json()['id']}/cancel", headers=headers)
-    assert cancelled.status_code == 200
-    assert cancelled.json()["status"] == "cancelled"
+    blocked = api_client.post(f"/api/v1/bookings/{created.json()['id']}/cancel", headers=headers)
+    assert blocked.status_code == 400
 
-    rebooked = api_client.post("/api/v1/bookings", json={**payload, "payment_method": "cash"}, headers=headers)
-    assert rebooked.status_code == 200
     refunded = api_client.post(
-        f"/api/v1/bookings/{rebooked.json()['id']}/refund",
-        json={"method": "cash", "reason": "Customer cancelled"},
+        f"/api/v1/bookings/{created.json()['id']}/refund",
+        json={"method": "gcash", "reason": "Customer cancelled"},
         headers=headers,
     )
     assert refunded.status_code == 200
     assert refunded.json()["payment_status"] == "refunded"
     assert refunded.json()["status"] == "cancelled"
+
+    rebooked = api_client.post("/api/v1/bookings", json={**payload, "payment_method": "cash"}, headers=headers)
+    assert rebooked.status_code == 200
+    assert rebooked.json()["status"] == "confirmed"

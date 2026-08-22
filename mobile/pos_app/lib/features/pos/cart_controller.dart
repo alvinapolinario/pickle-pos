@@ -18,7 +18,6 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
   int? heldSaleId;
 
   void add(Map<String, dynamic> product, {int qty = 1}) {
-    heldSaleId = null;
     final next = [...state];
     final index = next.indexWhere((line) => line.id == product['id']);
     if (index >= 0) {
@@ -35,7 +34,6 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
   }
 
   void remove(int productId) {
-    heldSaleId = null;
     state = [
       for (final line in state)
         if (line.id != productId) line else if (line.qty > 1) CartLine(product: line.product, qty: line.qty - 1),
@@ -43,7 +41,6 @@ class CartNotifier extends StateNotifier<List<CartLine>> {
   }
 
   void removeLine(int productId) {
-    heldSaleId = null;
     state = [for (final line in state) if (line.id != productId) line];
   }
 

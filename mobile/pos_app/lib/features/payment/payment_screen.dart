@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -62,6 +63,26 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
     }
   }
 
+  void _selectMethod(String method) {
+    setState(() {
+      _method = method;
+      final due = _quote?['net_amount'];
+      if (method != 'cash' && due != null) {
+        _amount.text = '$due';
+      }
+    });
+  }
+
+  String _completeError(Object error) {
+    if (error is DioException) {
+      final detail = error.response?.data;
+      if (detail is Map && detail['detail'] != null) return '${detail['detail']}';
+      if (error.response == null) return 'Saved locally if offline. Open More to sync.';
+      return 'Could not complete this sale.';
+    }
+    return 'Could not complete this sale.';
+  }
+
   Future<void> _complete() async {
     final session = ref.read(sessionProvider);
     if (session.shiftId == null) {
@@ -88,14 +109,19 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
               deviceId: session.deviceId,
               customerId: ref.read(selectedCustomerProvider)?.id,
             )
-          : await api.resumeSale(cart.heldSaleId!, payments);
+          : await api.resumeSale(
+              cart.heldSaleId!,
+              payments,
+              items: cart.items,
+              customerId: ref.read(selectedCustomerProvider)?.id,
+            );
       final saleId = int.parse('${sale['id']}');
       clearTicket(ref);
       if (mounted) setState(() => _busyLabel = 'Printing…');
       await _printSale(saleId);
       if (mounted) context.go('/receipt/$saleId');
-    } catch (_) {
-      setState(() => _error = 'Saved locally if offline. Open More to sync.');
+    } catch (error) {
+      setState(() => _error = _completeError(error));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -157,7 +183,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
                     trailing: _method == _methods[i].$1
                         ? const Icon(Icons.check_circle, color: accent)
                         : const Icon(Icons.circle_outlined, color: line),
-                    onTap: () => setState(() => _method = _methods[i].$1),
+                    onTap: () => _selectMethod(_methods[i].$1),
                   ),
                 ],
               ],

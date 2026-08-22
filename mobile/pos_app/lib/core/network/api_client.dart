@@ -210,9 +210,11 @@ class ApiClient {
     try {
       final response = await _dio.post(path, data: payload);
       return Map<String, dynamic>.from(response.data as Map);
-    } on DioException {
-      await enqueueSale({...payload, 'hold': hold, 'client_sale_uuid': clientSaleUuid});
-      scheduleSyncRetry();
+    } on DioException catch (error) {
+      if (_isOfflineFailure(error)) {
+        await enqueueSale({...payload, 'hold': hold, 'client_sale_uuid': clientSaleUuid});
+        scheduleSyncRetry();
+      }
       rethrow;
     }
   }
@@ -252,8 +254,22 @@ class ApiClient {
     return Map<String, dynamic>.from(response.data as Map);
   }
 
-  Future<Map<String, dynamic>> resumeSale(int saleId, List<Map<String, dynamic>> payments) async {
-    final response = await _dio.post('/sales/hold/$saleId/resume', data: {'payments': payments});
+  Future<Map<String, dynamic>> resumeSale(
+    int saleId,
+    List<Map<String, dynamic>> payments, {
+    List<Map<String, dynamic>>? items,
+    int? customerId,
+    String? discount,
+  }) async {
+    final response = await _dio.post(
+      '/sales/hold/$saleId/resume',
+      data: {
+        'payments': payments,
+        if (items != null) 'items': items,
+        if (discount != null) 'discount_amount': discount,
+        if (customerId != null) 'customer_id': customerId,
+      },
+    );
     return Map<String, dynamic>.from(response.data as Map);
   }
 
@@ -423,4 +439,18 @@ class ApiClient {
   }
 
   String newSaleUuid() => const Uuid().v4();
+}
+
+bool _isOfflineFailure(DioException error) {
+  switch (error.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+    case DioExceptionType.connectionError:
+      return true;
+    case DioExceptionType.unknown:
+      return error.response == null;
+    default:
+      return false;
+  }
 }

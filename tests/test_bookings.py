@@ -67,7 +67,13 @@ def test_create_booking_and_prevent_overlap(court, user):
 def test_cancel_frees_slot(court, user):
     start, end = _slot()
     service = BookingService()
-    booking = service.create_booking(court_id=court.id, booked_by_id=user.id, start_at=start, end_at=end)
+    booking = service.create_booking(
+        court_id=court.id,
+        booked_by_id=user.id,
+        start_at=start,
+        end_at=end,
+        payment_method="",
+    )
     service.cancel_booking(booking_id=booking.id)
     again = service.create_booking(court_id=court.id, booked_by_id=user.id, start_at=start, end_at=end)
     assert again.id != booking.id
@@ -133,12 +139,12 @@ def test_cannot_refund_unpaid_booking(court, user):
 
 
 @pytest.mark.django_db
-def test_refund_after_cancel_without_refund(court, user):
+def test_cannot_cancel_paid_booking(court, user):
     start, end = _slot(hours=14)
     service = BookingService()
     booking = service.create_booking(court_id=court.id, booked_by_id=user.id, start_at=start, end_at=end)
-    service.cancel_booking(booking_id=booking.id)
-    refund = service.refund_booking(booking_id=booking.id, refunded_by_id=user.id, method="cash")
+    with pytest.raises(DomainError, match="Refund this paid booking"):
+        service.cancel_booking(booking_id=booking.id)
     booking.refresh_from_db()
-    assert refund.amount == booking.amount
-    assert booking.payment_status == Booking.PaymentStatus.REFUNDED
+    assert booking.status == Booking.Status.CONFIRMED
+    assert booking.payment_status == Booking.PaymentStatus.PAID

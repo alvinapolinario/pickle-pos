@@ -40,6 +40,9 @@ class HoldSaleRequest(BaseModel):
 
 class ResumeSaleRequest(BaseModel):
     payments: list[PaymentIn]
+    items: list[SaleItemIn] | None = None
+    discount_amount: Decimal | None = None
+    customer_id: int | None = None
 
 
 class VoidSaleRequest(BaseModel):

@@ -165,6 +165,9 @@ class SaleService:
         sale_id: int,
         cashier_id: int,
         payments: list[PaymentInput],
+        lines: list[SaleLineInput] | None = None,
+        discount_amount: Decimal | None = None,
+        customer_id: int | None = None,
     ):
         from apps.sales.models import HeldOrder, Payment, Sale
 
@@ -175,6 +178,13 @@ class SaleService:
             shift = ShiftService()._lock_open(sale.shift_id)
             if shift.cashier_id != cashier_id:
                 raise DomainError("Shift does not belong to this cashier.")
+            if lines is not None:
+                self._replace_held_items(
+                    sale,
+                    lines,
+                    discount_amount=discount_amount,
+                    customer_id=customer_id,
+                )
             change, payment_status = self._settle_payments(sale.net_amount, payments)
             inventory = InventoryService()
             for item in sale.items.select_related("product"):
@@ -245,9 +255,12 @@ class SaleService:
                 raise DomainError("Sale is already voided.")
             if sale.refunds.exists():
                 raise DomainError("Cannot void a sale that has refunds.")
-            shift = ShiftService()._lock_open(sale.shift_id)
-            if shift.cashier_id != cashier_id:
-                raise DomainError("Void this sale from the cashier's open shift.")
+            current = ShiftService().current_shift(cashier_id=cashier_id, branch_id=sale.branch_id)
+            if current is None:
+                raise DomainError("Open a shift before voiding.")
+            shift = ShiftService()._lock_open(current.id)
+            if shift.branch_id != sale.branch_id:
+                raise DomainError("Void must be on the same branch as the sale.")
             inventory = InventoryService()
             if sale.status == Sale.Status.COMPLETED:
                 for item in sale.items.select_related("product"):
@@ -396,6 +409,58 @@ class SaleService:
         change = money(cash - due)
         status = Sale.PaymentStatus.PAID if money(cash + non_cash) >= net else Sale.PaymentStatus.PARTIAL
         return change, status
+
+    def _replace_held_items(
+        self,
+        sale,
+        lines: list[SaleLineInput],
+        *,
+        discount_amount: Decimal | None,
+        customer_id: int | None,
+    ):
+        from apps.sales.models import SaleItem
+
+        if not lines:
+            raise DomainError("Held order has no items.")
+        customer = self._resolve_customer(
+            customer_id if customer_id is not None else sale.customer_id,
+            sale.branch_id,
+        )
+        quote = PricingService().quote(
+            branch_id=sale.branch_id,
+            lines=[QuoteLineInput(line.product_id, line.quantity, line.modifier_total) for line in lines],
+            discount_amount=sale.discount_amount if discount_amount is None else discount_amount,
+            customer_id=customer.id if customer else None,
+        )
+        sale.items.all().delete()
+        for line in quote.lines:
+            SaleItem.objects.create(
+                sale=sale,
+                product_id=line.product_id,
+                sku=line.sku,
+                name=line.name,
+                quantity=line.quantity.quantize(QTY),
+                unit_price=line.unit_price,
+                line_gross=line.line_gross,
+                line_discount=line.line_discount,
+                line_tax=line.line_tax,
+                line_net=line.line_net,
+            )
+        sale.customer = customer
+        sale.gross_amount = quote.gross_amount
+        sale.discount_amount = quote.discount_amount
+        sale.tax_amount = quote.tax_amount
+        sale.net_amount = quote.net_amount
+        sale.save(
+            update_fields=[
+                "customer",
+                "gross_amount",
+                "discount_amount",
+                "tax_amount",
+                "net_amount",
+                "updated_at",
+            ]
+        )
 
     def _lock_sale(self, sale_id: int):
         from apps.sales.models import Sale

@@ -89,7 +89,6 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
         subtitle: '${_rangeLabel(start, end)} · ${booking['booking_number']}',
         amount: booking['amount'],
         actionLabel: paid ? 'Refund & cancel' : 'Cancel booking',
-        secondaryLabel: paid ? 'Cancel without refund' : null,
         destructive: true,
       ),
     );
@@ -558,7 +557,6 @@ class _BookingSheet extends StatelessWidget {
     required this.subtitle,
     required this.actionLabel,
     this.amount,
-    this.secondaryLabel,
     this.destructive = false,
   });
 
@@ -566,7 +564,6 @@ class _BookingSheet extends StatelessWidget {
   final String subtitle;
   final dynamic amount;
   final String actionLabel;
-  final String? secondaryLabel;
   final bool destructive;
 
   @override
@@ -590,13 +587,6 @@ class _BookingSheet extends StatelessWidget {
             style: destructive ? FilledButton.styleFrom(backgroundColor: red) : null,
             child: Text(actionLabel),
           ),
-          if (secondaryLabel != null) ...[
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => Navigator.pop(context, destructive ? 'cancel' : 'gcash'),
-              child: Text(secondaryLabel!),
-            ),
-          ],
         ],
       ),
     );

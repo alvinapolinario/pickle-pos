@@ -173,6 +173,8 @@ class BookingService:
                 raise NotFoundError("Booking not found.")
             if booking.status == Booking.Status.CANCELLED:
                 raise DomainError("Booking is already cancelled.")
+            if booking.payment_status == Booking.PaymentStatus.PAID:
+                raise DomainError("Refund this paid booking instead of cancelling.")
             booking.status = Booking.Status.CANCELLED
             booking.save(update_fields=["status", "updated_at"])
         self._audit("booking.cancel", booking, booked_by_id)

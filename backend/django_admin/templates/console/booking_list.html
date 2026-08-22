@@ -50,8 +50,8 @@
                         {% if booking.payment_status == "paid" %}
                         <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'courts:booking_refund' booking.pk %}" data-modal-title="Refund {{ booking.booking_number }}" aria-label="Refund">{% icon "undo-2" 16 %}</button>
                         {% endif %}
-                        {% if booking.status != "cancelled" %}
-                        <form method="post" action="{% url 'courts:booking_cancel' booking.pk %}" data-confirm="Cancel {{ booking.booking_number }} without refunding?">
+                        {% if booking.status != "cancelled" and booking.payment_status != "paid" %}
+                        <form method="post" action="{% url 'courts:booking_cancel' booking.pk %}" data-confirm="Cancel {{ booking.booking_number }}?">
                             {% csrf_token %}
                             <button class="icon-action icon-action-danger" type="submit" aria-label="Cancel">{% icon "ban" 16 %}</button>
                         </form>

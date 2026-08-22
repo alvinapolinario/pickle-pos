@@ -138,11 +138,16 @@ def resume_sale(
     current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     enforce_permission(current_user, "sales.create")
+    if payload.discount_amount:
+        enforce_discount(current_user, payload.discount_amount)
     try:
         sale = SaleService().resume_sale(
             sale_id=sale_id,
             cashier_id=current_user.user_id,
             payments=_payments(payload.payments),
+            lines=_lines(payload.items) if payload.items is not None else None,
+            discount_amount=payload.discount_amount,
+            customer_id=payload.customer_id,
         )
     except DomainError as exc:
         raise_domain(exc)

@@ -154,3 +154,56 @@ def test_hold_does_not_deduct_until_resume(open_shift, user, stocked, branch):
     assert completed.status == Sale.Status.COMPLETED
     assert completed.change_amount == Decimal("0.00")
     assert InventoryService().get_on_hand(branch_id=branch.id, product_id=stocked.id) == Decimal("9.000")
+
+
+@pytest.mark.django_db
+def test_resume_applies_edited_held_items(open_shift, user, stocked, branch):
+    held = SaleService().create_sale(
+        shift_id=open_shift.id,
+        cashier_id=user.id,
+        lines=[SaleLineInput(stocked.id, Decimal("1"))],
+        payments=[],
+        hold=True,
+    )
+    completed = SaleService().resume_sale(
+        sale_id=held.id,
+        cashier_id=user.id,
+        lines=[SaleLineInput(stocked.id, Decimal("2"))],
+        payments=[PaymentInput("gcash", Decimal("90.00"))],
+    )
+    completed.refresh_from_db()
+    assert completed.net_amount == Decimal("90.00")
+    assert completed.items.get().quantity == Decimal("2.000")
+    assert InventoryService().get_on_hand(branch_id=branch.id, product_id=stocked.id) == Decimal("8.000")
+
+
+@pytest.mark.django_db
+def test_void_after_original_shift_closed(open_shift, user, stocked, branch):
+    sale = _cash_sale(open_shift, user, stocked, qty=Decimal("2"))
+    ShiftService().close_shift(shift_id=open_shift.id, actual_cash=Decimal("290.00"))
+    with pytest.raises(DomainError, match="Open a shift"):
+        SaleService().void_sale(sale_id=sale.id, cashier_id=user.id, reason="After close")
+    ShiftService().open_shift(cashier_id=user.id, branch_id=branch.id, opening_cash=Decimal("200.00"))
+    SaleService().void_sale(sale_id=sale.id, cashier_id=user.id, reason="After close")
+    sale.refresh_from_db()
+    assert sale.status == Sale.Status.VOID
+    assert InventoryService().get_on_hand(branch_id=branch.id, product_id=stocked.id) == Decimal("10.000")
+
+
+@pytest.mark.django_db
+def test_void_from_another_cashiers_open_shift(open_shift, user, stocked, branch, cashier_role):
+    from django.contrib.auth import get_user_model
+
+    sale = _cash_sale(open_shift, user, stocked, qty=Decimal("1"))
+    supervisor = get_user_model().objects.create_user(
+        username="supervisor1",
+        password="secure-pass-123",
+        email="supervisor1@example.com",
+        branch=branch,
+    )
+    supervisor.roles.add(cashier_role)
+    ShiftService().open_shift(cashier_id=supervisor.id, branch_id=branch.id, opening_cash=Decimal("100.00"))
+    SaleService().void_sale(sale_id=sale.id, cashier_id=supervisor.id, reason="Supervisor override")
+    sale.refresh_from_db()
+    assert sale.status == Sale.Status.VOID
+    assert InventoryService().get_on_hand(branch_id=branch.id, product_id=stocked.id) == Decimal("10.000")
