@@ -19,6 +19,7 @@
                 <th>Day</th>
                 <th>Hourly rate</th>
                 <th>Active</th>
+                <th class="col-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -28,6 +29,11 @@
                 <td>{{ rate.get_weekday_display }}</td>
                 <td>₱ {{ rate.hourly_rate }}</td>
                 <td>{% if rate.is_active %}Yes{% else %}No{% endif %}</td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'courts:rate_edit' rate.pk %}" data-modal-title="Edit {{ rate.court.name }} · {{ rate.get_weekday_display }}" aria-label="Edit">{% icon "pencil" 16 %}</button>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

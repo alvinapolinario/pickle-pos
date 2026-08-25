@@ -26,6 +26,7 @@
                 <th>Amount</th>
                 <th>Notes</th>
                 <th>By</th>
+                <th class="col-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -36,6 +37,11 @@
                 <td>₱ {{ expense.amount|floatformat:2 }}</td>
                 <td>{{ expense.notes|default:"—" }}</td>
                 <td>{{ expense.created_by|default:"—" }}</td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'expenses:expense_edit' expense.pk %}" data-modal-title="Edit {{ expense.category.name }} expense" aria-label="Edit">{% icon "pencil" 16 %}</button>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

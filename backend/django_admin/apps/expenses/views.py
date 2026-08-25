@@ -3,7 +3,7 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.branches.models import Branch
@@ -109,6 +109,46 @@ def expense_create(request: HttpRequest) -> HttpResponse:
         form,
         title="New expense",
         action_url=reverse("expenses:expense_create"),
+        list_url=reverse("expenses:expense_list"),
+        status=422 if request.method == "POST" else 200,
+    )
+
+
+@login_required
+def expense_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    expenses = Expense.objects.select_related("branch", "category")
+    branch = _working_branch(request)
+    if branch:
+        expenses = expenses.filter(branch=branch)
+    expense = get_object_or_404(expenses, pk=pk)
+    form = ExpenseForm(
+        request.POST or None,
+        instance=expense,
+        branch=expense.branch,
+        lock_branch=_lock_branch(request),
+    )
+    if request.method == "POST" and form.is_valid():
+        saved = form.save(commit=False)
+        if _lock_branch(request):
+            saved.branch = request.user.branch
+        saved.save()
+        from apps.audit.middleware import write_audit_log
+
+        write_audit_log(
+            action="expense.update",
+            entity_type="expense",
+            entity_id=str(saved.id),
+            user=request.user,
+            new_values={"amount": str(saved.amount), "category": saved.category.name},
+        )
+        return _saved(request, "Expense updated.")
+    if request.method == "GET" and not _is_partial(request):
+        return redirect(reverse("expenses:expense_list") + f"?modal=edit&id={pk}")
+    return _form_response(
+        request,
+        form,
+        title=f"Edit {expense.category.name} expense",
+        action_url=reverse("expenses:expense_edit", args=[pk]),
         list_url=reverse("expenses:expense_list"),
         status=422 if request.method == "POST" else 200,
     )

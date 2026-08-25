@@ -15,6 +15,21 @@ class AuthenticatedUser:
     permissions: frozenset[str]
 
 
+TABLET_ONLY_ROLE_CODES = frozenset({"cashier"})
+
+
+def user_can_use_console(user) -> bool:
+    """Cashiers use the POS tablet. Owner/Administrator/Manager and staff use the web console."""
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return True
+    codes = set(user.roles.values_list("code", flat=True))
+    if not codes:
+        return False
+    return bool(codes - TABLET_ONLY_ROLE_CODES)
+
+
 def user_has_permission(user_permissions: frozenset[str], required: str) -> bool:
     if "*" in user_permissions:
         return True

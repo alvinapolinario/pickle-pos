@@ -21,6 +21,7 @@ def health_check(_request):
 urlpatterns = [
     path("health/", health_check, name="health"),
     path("django-admin/", admin.site.urls),
+    path("", include("apps.accounts.urls")),
     path("", include("apps.products.urls")),
     path("", include("apps.inventory.urls")),
     path("", include("apps.purchasing.urls")),

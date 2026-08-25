@@ -110,6 +110,36 @@ def tier_create(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def tier_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    tiers = MembershipTier.objects.select_related("branch")
+    branch = _working_branch(request)
+    if branch:
+        tiers = tiers.filter(branch=branch)
+    tier = get_object_or_404(tiers, pk=pk)
+    form = MembershipTierForm(
+        request.POST or None,
+        instance=tier,
+        branch=tier.branch,
+        lock_branch=_lock_branch(request),
+    )
+    if request.method == "POST" and form.is_valid():
+        saved = form.save(commit=False)
+        if _lock_branch(request):
+            saved.branch = request.user.branch
+        saved.save()
+        return _saved(request, f"Tier “{saved.name}” updated.")
+    if request.method == "GET" and not _is_partial(request):
+        return redirect(reverse("membership:membership_list") + f"?modal=edit-tier&id={pk}")
+    return _form_response(
+        request,
+        form,
+        title=f"Edit {tier.name}",
+        action_url=reverse("membership:tier_edit", args=[pk]),
+        status=422 if request.method == "POST" else 200,
+    )
+
+
+@login_required
 def membership_assign(request: HttpRequest) -> HttpResponse:
     branch = _working_branch(request)
     form = MembershipForm(request.POST or None, branch=branch, lock_branch=_lock_branch(request))
@@ -132,6 +162,42 @@ def membership_assign(request: HttpRequest) -> HttpResponse:
         form,
         title="Assign membership",
         action_url=reverse("membership:membership_assign"),
+        status=422 if request.method == "POST" else 200,
+    )
+
+
+@login_required
+def membership_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    members = Membership.objects.select_related("customer", "tier", "branch")
+    branch = _working_branch(request)
+    if branch:
+        members = members.filter(branch=branch)
+    membership = get_object_or_404(members, pk=pk)
+    form = MembershipForm(
+        request.POST or None,
+        instance=membership,
+        branch=membership.branch,
+        lock_branch=_lock_branch(request),
+    )
+    if request.method == "POST" and form.is_valid():
+        saved = form.save(commit=False)
+        if _lock_branch(request):
+            saved.branch = request.user.branch
+        if saved.status == Membership.Status.ACTIVE:
+            MembershipService().cancel_other_active(
+                branch_id=saved.branch_id,
+                customer_id=saved.customer_id,
+                keep_id=saved.pk,
+            )
+        saved.save()
+        return _saved(request, f"Membership for {saved.customer} updated.")
+    if request.method == "GET" and not _is_partial(request):
+        return redirect(reverse("membership:membership_list") + f"?modal=edit&id={pk}")
+    return _form_response(
+        request,
+        form,
+        title=f"Edit {membership.customer.name}",
+        action_url=reverse("membership:membership_edit", args=[pk]),
         status=422 if request.method == "POST" else 200,
     )
 

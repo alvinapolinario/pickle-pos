@@ -1,0 +1,81 @@
+{% extends "console/base.html" %}
+{% load console_icons %}
+
+{% block content %}
+<div class="toolbar">
+    <form class="toolbar-filters" method="get">
+        <input class="field-input" type="search" name="q" value="{{ q }}" placeholder="Search username, name, email">
+        {% if not cashiers_only %}
+        <select class="field-input" name="role">
+            <option value="">All roles</option>
+            {% for item in roles %}
+            <option value="{{ item.code }}" {% if role == item.code %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <select class="field-input" name="status">
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+            <option value="all" {% if status == 'all' %}selected{% endif %}>All</option>
+        </select>
+        <button class="btn-secondary" type="submit">Filter</button>
+    </form>
+    <button class="btn-primary btn-compact" type="button" data-open-form="{{ create_url }}" data-modal-title="New user" data-modal-key="create">
+        {% icon "plus" 16 %}
+        Add user
+    </button>
+</div>
+
+<article class="card module-card">
+    {% if users %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Branch</th>
+                <th>Role</th>
+                <th>PIN</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for staff in users %}
+            <tr>
+                <td class="row-title">{{ staff.username }}</td>
+                <td>{{ staff.get_full_name|default:"—" }}</td>
+                <td>{{ staff.branch.name|default:"—" }}</td>
+                <td>{{ staff.roles.all|join:", "|default:"—" }}</td>
+                <td>{% if staff.pin_hash %}Set{% else %}—{% endif %}</td>
+                <td>
+                    {% if staff.is_active %}<span class="status">ACTIVE</span>
+                    {% else %}<span class="status status-muted">INACTIVE</span>{% endif %}
+                </td>
+                <td>
+                    <div class="icon-actions">
+                        <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'accounts:user_edit' staff.pk %}" data-modal-title="Edit {{ staff.username }}" aria-label="Edit" title="Edit">{% icon "pencil" 16 %}</button>
+                        {% if staff.pk != request.user.pk %}
+                        <form method="post" action="{% url 'accounts:user_toggle' staff.pk %}" data-confirm="{% if staff.is_active %}Deactivate{% else %}Activate{% endif %} “{{ staff.username }}”?">
+                            {% csrf_token %}
+                            <button class="icon-action {% if staff.is_active %}icon-action-danger{% else %}icon-action-success{% endif %}" type="submit" aria-label="{% if staff.is_active %}Deactivate{% else %}Activate{% endif %}" title="{% if staff.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                {% if staff.is_active %}{% icon "ban" 16 %}{% else %}{% icon "power" 16 %}{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+        <h3>{% if cashiers_only %}No cashiers yet{% else %}No users found{% endif %}</h3>
+        <p>{% if cashiers_only %}Add a user with the Cashier role. A password is for the web console; a PIN is for the POS tablet.{% else %}Add staff here instead of Django admin. Owner or Administrator can use the console; Cashier is for the tablet.{% endif %}</p>
+    </div>
+    {% endif %}
+</article>
+
+{% include "console/partials/modals.html" %}
+{% endblock %}

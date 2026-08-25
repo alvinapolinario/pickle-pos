@@ -30,6 +30,7 @@
                     <th>Canteen</th>
                     <th>Points / ₱</th>
                     <th>Priority</th>
+                    <th class="col-actions">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -40,6 +41,11 @@
                     <td>{{ tier.canteen_discount_pct }}%</td>
                     <td>{{ tier.points_per_peso }}</td>
                     <td>{% if tier.priority_booking %}Yes{% else %}—{% endif %}</td>
+                    <td>
+                        <div class="icon-actions">
+                            <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'membership:tier_edit' tier.pk %}" data-modal-title="Edit {{ tier.name }}" aria-label="Edit">{% icon "pencil" 16 %}</button>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -75,12 +81,15 @@
                     <td>{{ row.expires_on|date:"M j, Y"|default:"—" }}</td>
                     <td><span class="status">{{ row.status|upper }}</span></td>
                     <td>
-                        {% if row.status == "active" %}
-                        <form method="post" action="{% url 'membership:membership_cancel' row.pk %}" data-confirm="Cancel membership for {{ row.customer.name }}?">
-                            {% csrf_token %}
-                            <button class="icon-action icon-action-danger" type="submit" aria-label="Cancel">{% icon "ban" 16 %}</button>
-                        </form>
-                        {% endif %}
+                        <div class="icon-actions">
+                            <button class="icon-action icon-action-edit" type="button" data-open-form="{% url 'membership:membership_edit' row.pk %}" data-modal-title="Edit {{ row.customer.name }}" aria-label="Edit">{% icon "pencil" 16 %}</button>
+                            {% if row.status == "active" %}
+                            <form method="post" action="{% url 'membership:membership_cancel' row.pk %}" data-confirm="Cancel membership for {{ row.customer.name }}?">
+                                {% csrf_token %}
+                                <button class="icon-action icon-action-danger" type="submit" aria-label="Cancel">{% icon "ban" 16 %}</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}

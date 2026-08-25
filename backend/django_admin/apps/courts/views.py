@@ -167,6 +167,30 @@ def rate_create(request: HttpRequest) -> HttpResponse:
 
 
 @login_required
+def rate_edit(request: HttpRequest, pk: int) -> HttpResponse:
+    rates = CourtRate.objects.select_related("court", "court__branch")
+    branch = _working_branch(request)
+    if branch:
+        rates = rates.filter(court__branch=branch)
+    rate = get_object_or_404(rates, pk=pk)
+    form = CourtRateForm(request.POST or None, instance=rate, branch=rate.court.branch)
+    if request.method == "POST" and form.is_valid():
+        saved = form.save()
+        return _saved(request, "courts:rate_list", f"Rate updated for {saved.court}.")
+    if request.method == "GET" and not _is_partial(request):
+        return redirect(reverse("courts:rate_list") + f"?modal=edit&id={pk}")
+    return _form_response(
+        request,
+        form,
+        title=f"Edit {rate.court.name} · {rate.get_weekday_display()}",
+        action_url=reverse("courts:rate_edit", args=[pk]),
+        list_url=reverse("courts:rate_list"),
+        page_name="court_rates",
+        status=422 if request.method == "POST" else 200,
+    )
+
+
+@login_required
 def booking_list(request: HttpRequest) -> HttpResponse:
     branch = _working_branch(request)
     day = request.GET.get("date")

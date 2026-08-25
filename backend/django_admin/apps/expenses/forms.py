@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 
 from apps.branches.models import Branch
 from apps.expenses.models import Expense, ExpenseCategory
@@ -36,7 +37,7 @@ class ExpenseForm(forms.ModelForm):
             "branch": forms.Select(attrs={"class": "field-input"}),
             "category": forms.Select(attrs={"class": "field-input"}),
             "amount": _input(forms.NumberInput, step="0.01", min="0.01"),
-            "incurred_on": forms.DateInput(attrs={"class": "field-input", "type": "date"}),
+            "incurred_on": forms.DateInput(attrs={"class": "field-input", "type": "date"}, format="%Y-%m-%d"),
             "notes": _input(placeholder="Optional notes"),
         }
 
@@ -48,6 +49,8 @@ class ExpenseForm(forms.ModelForm):
             categories = categories.filter(branch=branch)
             if not self.instance.pk:
                 self.fields["branch"].initial = branch
+        if self.instance.pk and self.instance.category_id:
+            categories = ExpenseCategory.objects.filter(Q(pk__in=categories) | Q(pk=self.instance.category_id))
         self.fields["category"].queryset = categories
         if lock_branch and branch:
             self.fields["branch"].widget = forms.HiddenInput()

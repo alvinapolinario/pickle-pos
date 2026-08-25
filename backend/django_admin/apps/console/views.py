@@ -11,13 +11,13 @@ from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from apps.accounts.models import Role, User
+from apps.accounts.models import Role
 from apps.audit.middleware import write_audit_log
 from apps.audit.models import AuditLog
 from apps.branches.models import Branch
 from apps.console.dashboard_data import dashboard_data
 from apps.console.navigation import PAGE_META, page_meta
-from core.domain.auth import user_has_permission
+from core.domain.auth import user_can_use_console, user_has_permission
 from core.domain.exceptions import AuthenticationError, DomainError
 from core.services.auth_service import AuthService
 from core.services.pairing_service import PairingService, qr_png_bytes
@@ -62,17 +62,28 @@ def login_view(request: HttpRequest) -> HttpResponse:
 
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
-        auth_service.lockout.clear(username)
-        login(request, user)
-        write_audit_log(action="auth.login", entity_type="user", entity_id=str(user.id), user=user)
-        next_url = request.POST.get("next") or request.GET.get("next") or "/"
-        if not url_has_allowed_host_and_scheme(
-            next_url,
-            allowed_hosts={request.get_host()},
-            require_https=request.is_secure(),
-        ):
-            next_url = "/"
-        return redirect(next_url)
+        if not user_can_use_console(user):
+            form.add_error(
+                None,
+                "This account is for the POS tablet. Sign in here with an Owner or Administrator account.",
+            )
+            return render(
+                request,
+                "console/login.html",
+                {"form": form, "next": request.GET.get("next", "")},
+            )
+        else:
+            auth_service.lockout.clear(username)
+            login(request, user)
+            write_audit_log(action="auth.login", entity_type="user", entity_id=str(user.id), user=user)
+            next_url = request.POST.get("next") or request.GET.get("next") or "/"
+            if not url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                next_url = "/"
+            return redirect(next_url)
 
     if request.method == "POST" and username and not form.is_valid():
         try:
@@ -126,20 +137,7 @@ def module_page(request: HttpRequest, page_name: str) -> HttpResponse:
         "empty_message": f"{meta['title']} will be available when this module is implemented.",
     }
 
-    if page_name == "users":
-        context["columns"] = ["Username", "Name", "Branch", "Role", "Status"]
-        context["rows"] = [
-            [
-                user.username,
-                user.get_full_name() or "—",
-                user.branch.name if user.branch else "—",
-                ", ".join(user.roles.values_list("name", flat=True)) or "—",
-                "Active" if user.is_active else "Inactive",
-            ]
-            for user in User.objects.select_related("branch").prefetch_related("roles").order_by("username")
-        ]
-        context["empty_message"] = "No users found."
-    elif page_name == "roles":
+    if page_name == "roles":
         context["columns"] = ["Role", "Code", "Permissions", "Status"]
         context["rows"] = [
             [

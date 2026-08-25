@@ -49,11 +49,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "apps.console.middleware.ConsoleAccessMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.audit.middleware.AuditContextMiddleware",
 ]
@@ -113,6 +115,12 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:7100",
     "http://127.0.0.1:7100",
     "http://localhost",
+    "http://187.77.142.118",
+    "https://187.77.142.118",
+    "http://picklewest.net",
+    "https://picklewest.net",
+    "http://www.picklewest.net",
+    "https://www.picklewest.net",
 ]
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"

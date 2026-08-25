@@ -1,0 +1,4 @@
+storePassword=replace-me
+keyPassword=replace-me
+keyAlias=picklepos
+storeFile=keystore/pickle-pos.jks

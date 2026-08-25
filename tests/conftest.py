@@ -30,14 +30,19 @@ def cashier_role(db):
 
 
 @pytest.fixture
-def user(db, branch, cashier_role):
+def manager_role(db):
+    return Role.objects.create(code="manager", name="Manager")
+
+
+@pytest.fixture
+def user(db, branch, cashier_role, manager_role):
     user = User.objects.create_user(
         username="cashier1",
         password="secure-pass-123",
         email="cashier1@example.com",
         branch=branch,
     )
-    user.roles.add(cashier_role)
+    user.roles.add(cashier_role, manager_role)
     return user
 
 

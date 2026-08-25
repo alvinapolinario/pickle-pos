@@ -47,9 +47,9 @@ NAV_SECTIONS = [
     {
         "label": "Employees",
         "items": [
-            {"name": "users", "label": "Users", "icon": "user-cog"},
+            {"name": "users", "label": "Users", "icon": "user-cog", "url_name": "accounts:user_list"},
             {"name": "roles", "label": "Roles & Permissions", "icon": "shield"},
-            {"name": "cashiers", "label": "Cashiers", "icon": "user"},
+            {"name": "cashiers", "label": "Cashiers", "icon": "user", "url_name": "accounts:cashier_list"},
         ],
     },
     {

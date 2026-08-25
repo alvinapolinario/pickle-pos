@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-pickle_pos}
       POSTGRES_USER: ${POSTGRES_USER:-pickle_pos}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pickle_pos_dev}
+      POSTGRES_PASSWORD: pickle_pos_dev
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -36,6 +36,7 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.development
+      DATABASE_URL: postgresql://pickle_pos:pickle_pos_dev@postgres:5432/pickle_pos
     volumes:
       - ./backend:/app/backend
     ports:
@@ -53,6 +54,8 @@ services:
     command: uvicorn fastapi_api.main:app --host 0.0.0.0 --port 7101 --reload
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://pickle_pos:pickle_pos_dev@postgres:5432/pickle_pos
     volumes:
       - ./backend:/app/backend
     ports:
@@ -72,6 +75,8 @@ services:
     command: celery -A workers.celery_app worker --loglevel=info
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://pickle_pos:pickle_pos_dev@postgres:5432/pickle_pos
     volumes:
       - ./backend:/app/backend
     depends_on:
@@ -87,6 +92,8 @@ services:
     command: celery -A workers.celery_app beat --loglevel=info
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://pickle_pos:pickle_pos_dev@postgres:5432/pickle_pos
     volumes:
       - ./backend:/app/backend
     depends_on:

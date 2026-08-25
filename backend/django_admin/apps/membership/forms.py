@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 
 from apps.branches.models import Branch
 from apps.customers.models import Customer
@@ -53,8 +54,8 @@ class MembershipForm(forms.ModelForm):
             "branch": forms.Select(attrs={"class": "field-input"}),
             "customer": forms.Select(attrs={"class": "field-input"}),
             "tier": forms.Select(attrs={"class": "field-input"}),
-            "started_on": _input(forms.DateInput, type="date"),
-            "expires_on": _input(forms.DateInput, type="date"),
+            "started_on": forms.DateInput(attrs={"class": "field-input", "type": "date"}, format="%Y-%m-%d"),
+            "expires_on": forms.DateInput(attrs={"class": "field-input", "type": "date"}, format="%Y-%m-%d"),
             "notes": _input(placeholder="Optional note"),
         }
 
@@ -68,6 +69,11 @@ class MembershipForm(forms.ModelForm):
             tiers = tiers.filter(branch=branch)
             if not self.instance.pk:
                 self.fields["branch"].initial = branch
+        if self.instance.pk:
+            if self.instance.customer_id:
+                customers = Customer.objects.filter(Q(pk__in=customers) | Q(pk=self.instance.customer_id))
+            if self.instance.tier_id:
+                tiers = MembershipTier.objects.filter(Q(pk__in=tiers) | Q(pk=self.instance.tier_id))
         self.fields["customer"].queryset = customers
         self.fields["tier"].queryset = tiers
         if lock_branch and branch:

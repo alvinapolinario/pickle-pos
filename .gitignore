@@ -51,6 +51,9 @@ mobile/pos_app/.flutter-plugins
 mobile/pos_app/.flutter-plugins-dependencies
 mobile/pos_app/.packages
 mobile/pos_app/pubspec.lock
+mobile/pos_app/android/key.properties
+mobile/pos_app/android/keystore/*.jks
+mobile/pos_app/android/keystore/*.keystore
 
 # OS
 .DS_Store

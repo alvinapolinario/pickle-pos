@@ -109,11 +109,7 @@ class MembershipService:
             raise NotFoundError("Membership tier not found.")
         start = started_on or timezone.localdate()
         with transaction.atomic():
-            Membership.objects.filter(
-                customer_id=customer_id,
-                branch_id=branch_id,
-                status=Membership.Status.ACTIVE,
-            ).update(status=Membership.Status.CANCELLED, updated_at=timezone.now())
+            self.cancel_other_active(branch_id=branch_id, customer_id=customer_id)
             membership = Membership.objects.create(
                 branch_id=branch_id,
                 customer=customer,
@@ -131,6 +127,18 @@ class MembershipService:
             new_values={"customer_id": customer_id, "tier": tier.code},
         )
         return membership
+
+    def cancel_other_active(self, *, branch_id: int, customer_id: int, keep_id: int | None = None) -> None:
+        from apps.membership.models import Membership
+
+        others = Membership.objects.filter(
+            customer_id=customer_id,
+            branch_id=branch_id,
+            status=Membership.Status.ACTIVE,
+        )
+        if keep_id:
+            others = others.exclude(pk=keep_id)
+        others.update(status=Membership.Status.CANCELLED, updated_at=timezone.now())
 
     def award_points(
         self,

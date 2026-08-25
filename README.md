@@ -171,6 +171,7 @@ Behind TLS, set `SECURE_SSL_REDIRECT=true` and `SECURE_HSTS_SECONDS=31536000`.
 - [x] Optional customers, receipts, device API, and offline sync
 - [x] Flutter POS app (`mobile/pos_app`)
 
+
 ## License
 
 Proprietary — All rights reserved.
